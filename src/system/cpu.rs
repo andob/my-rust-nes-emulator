@@ -7,10 +7,10 @@ mod program_iterator;
 #[allow(non_snake_case)]
 pub struct CPU
 {
-    pub A : u8, //accumulator register
+    pub A : u8, //Accumulator register
     pub X : u8, //X index register
     pub Y : u8, //Y index register
-    pub stack : Vec<u8>,
+    pub SP : u16, //Stack Pointer
     pub program_counter : usize,
     pub flags : CPUFlags,
 }
@@ -40,7 +40,6 @@ pub enum AddressingMode
     IndirectX,
     IndirectY,
     Relative,
-    Unknown,
 }
 
 impl CPU
@@ -52,7 +51,7 @@ impl CPU
             A: 0,
             X: 0,
             Y: 0,
-            stack: vec![],
+            SP: 0x0100,
             program_counter: 0,
             flags: CPUFlags
             {
@@ -78,8 +77,8 @@ impl CPU
             if let Some(opcode) = opcodes.get(&opcode_key)
             {
                 let argument = CPU::next_argument_from_rom(nes, &opcode.addressing_mode);
-                println!("{} {:#04X}", opcode.name, argument);
-                (opcode.lambda)(&mut nes.cpu, argument);
+                println!("{} {:#04X}", opcode.name, argument.value);
+                (opcode.lambda)(nes, argument.address, argument.value);
             }
             else
             {

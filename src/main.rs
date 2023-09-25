@@ -8,7 +8,7 @@ fn main()
     //https://en.wikipedia.org/wiki/MOS_Technology_6502
     //https://www.masswerk.at/6502/6502_instruction_set.html
     //http://www.6502.org/tutorials/6502opcodes.html
-    //https://www.pagetable.com/c64ref/6502/
+    //https://www.pagetable.com/c64ref/6502/?tab=2
 
     let mut system = System::new();
     system.run();
