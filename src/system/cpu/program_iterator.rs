@@ -1,5 +1,21 @@
-use crate::system::cpu::{AddressingMode, CPU};
+use crate::system::cpu::CPU;
 use crate::system::System;
+
+pub enum AddressingMode
+{
+    Implied,
+    Immediate,
+    Absolute,
+    AbsoluteXIndexed,
+    AbsoluteYIndexed,
+    ZeroPage,
+    ZeroPageXIndexed,
+    ZeroPageYIndexed,
+    Indirect,
+    IndirectX,
+    IndirectY,
+    Relative,
+}
 
 pub struct OpcodeArg
 {
@@ -15,7 +31,7 @@ impl CPU
         {
             AddressingMode::Implied =>
             {
-                return OpcodeArg { address:0, value:0 };
+                return OpcodeArg { address:0, value: nes.cpu.A };
             }
 
             AddressingMode::Immediate =>

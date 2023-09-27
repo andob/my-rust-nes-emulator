@@ -4,11 +4,12 @@ mod system;
 
 fn main()
 {
-    //https://bugzmanov.github.io/nes_ebook/chapter_3_2.html
-    //https://en.wikipedia.org/wiki/MOS_Technology_6502
-    //https://www.masswerk.at/6502/6502_instruction_set.html
-    //http://www.6502.org/tutorials/6502opcodes.html
-    //https://www.pagetable.com/c64ref/6502/?tab=2
+    //todo https://bugzmanov.github.io/nes_ebook/chapter_1.html
+    //todo https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
+    //todo http://www.oxyron.de/html/opcodes02.html
+    //todo https://www.nesdev.org/undocumented_opcodes.txt
+    //todo http://www.6502.org/tutorials/6502opcodes.html
+    //todo https://www.pagetable.com/c64ref/6502/?tab=2
 
     let mut system = System::new();
     system.run();
