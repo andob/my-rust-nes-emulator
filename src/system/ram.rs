@@ -1,7 +1,8 @@
+use crate::type_alias::{byte, word};
 
 pub struct RAM
 {
-    bytes : Vec<u8>
+    bytes : Vec<byte>
 }
 
 impl RAM
@@ -12,16 +13,16 @@ impl RAM
         return RAM { bytes: vec![0; ram_size] };
     }
 
-    pub fn get(self : &RAM, index : usize) -> Option<&u8>
+    pub fn get(self : &RAM, index : word) -> Option<&byte>
     {
-        return self.bytes.get(index);
+        return self.bytes.get(index as usize);
     }
 
-    pub fn put(self : &mut RAM, address : usize, value : u8)
+    pub fn put(self : &mut RAM, address : word, value : byte)
     {
-        if address < self.bytes.len()
+        if (address as usize) < self.bytes.len()
         {
-            self.bytes[address] = value;
+            self.bytes[address as usize] = value;
         }
     }
 }

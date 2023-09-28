@@ -1,6 +1,7 @@
 use crate::system::System;
 
 mod system;
+mod type_alias;
 
 fn main()
 {

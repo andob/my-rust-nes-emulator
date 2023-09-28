@@ -1,4 +1,5 @@
 use crate::system::cpu::CPU;
+use crate::type_alias::{byte, word};
 use crate::system::System;
 
 pub enum AddressingMode
@@ -19,8 +20,8 @@ pub enum AddressingMode
 
 pub struct OpcodeArg
 {
-    pub address : usize,
-    pub value : u8,
+    pub address : word,
+    pub value : byte,
 }
 
 impl CPU
@@ -36,7 +37,7 @@ impl CPU
 
             AddressingMode::Immediate =>
             {
-                if let Some(value) = CPU::next_u8_from_rom(nes)
+                if let Some(value) = CPU::next_byte_from_rom(nes)
                 {
                     return OpcodeArg { address:0, value };
                 }
@@ -44,112 +45,112 @@ impl CPU
 
             AddressingMode::Absolute =>
             {
-                if let Some(address) = CPU::next_u16_from_rom(nes)
+                if let Some(address) = CPU::next_word_from_rom(nes)
                 {
-                    if let Some(value) = nes.ram.get(address as usize)
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::AbsoluteXIndexed =>
             {
-                if let Some(base_address) = CPU::next_u16_from_rom(nes)
+                if let Some(base_address) = CPU::next_word_from_rom(nes)
                 {
-                    let address = base_address.wrapping_add(nes.cpu.X as u16);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    let address = base_address.wrapping_add(nes.cpu.X as word);
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::AbsoluteYIndexed =>
             {
-                if let Some(base_address) = CPU::next_u16_from_rom(nes)
+                if let Some(base_address) = CPU::next_word_from_rom(nes)
                 {
-                    let address = base_address.wrapping_add(nes.cpu.Y as u16);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    let address = base_address.wrapping_add(nes.cpu.Y as word);
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::ZeroPage =>
             {
-                if let Some(address) = CPU::next_u8_from_rom(nes)
+                if let Some(address) = CPU::next_byte_from_rom(nes)
                 {
-                    if let Some(value) = nes.ram.get(address as usize)
+                    if let Some(value) = nes.ram.get(address as word)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address:address as word, value:*value };
                     }
                 }
             }
 
             AddressingMode::ZeroPageXIndexed =>
             {
-                if let Some(base_address) = CPU::next_u8_from_rom(nes)
+                if let Some(base_address) = CPU::next_byte_from_rom(nes)
                 {
                     let address = base_address.wrapping_add(nes.cpu.X);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    if let Some(value) = nes.ram.get(address as word)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address:address as word, value:*value };
                     }
                 }
             }
 
             AddressingMode::ZeroPageYIndexed =>
             {
-                if let Some(base_address) = CPU::next_u8_from_rom(nes)
+                if let Some(base_address) = CPU::next_byte_from_rom(nes)
                 {
                     let address = base_address.wrapping_add(nes.cpu.Y);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    if let Some(value) = nes.ram.get(address as word)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address:address as word, value:*value };
                     }
                 }
             }
 
             AddressingMode::Indirect =>
             {
-                if let Some(address) = CPU::next_u16_from_rom(nes)
+                if let Some(address) = CPU::next_word_from_rom(nes)
                 {
-                    if let Some(value) = nes.ram.get(address as usize)
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::IndirectX =>
             {
-                if let Some(base_address) = CPU::next_u16_from_rom(nes)
+                if let Some(base_address) = CPU::next_word_from_rom(nes)
                 {
-                    let address = base_address.wrapping_add(nes.cpu.X as u16);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    let address = base_address.wrapping_add(nes.cpu.X as word);
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::IndirectY =>
             {
-                if let Some(base_address) = CPU::next_u16_from_rom(nes)
+                if let Some(base_address) = CPU::next_word_from_rom(nes)
                 {
-                    let address = base_address.wrapping_add(nes.cpu.Y as u16);
-                    if let Some(value) = nes.ram.get(address as usize)
+                    let address = base_address.wrapping_add(nes.cpu.Y as word);
+                    if let Some(value) = nes.ram.get(address)
                     {
-                        return OpcodeArg { address:address as usize, value:*value };
+                        return OpcodeArg { address, value:*value };
                     }
                 }
             }
 
             AddressingMode::Relative =>
             {
-                if let Some(offset) = CPU::next_u8_from_rom(nes)
+                if let Some(offset) = CPU::next_byte_from_rom(nes)
                 {
                     return OpcodeArg { address:0, value:offset };
                 }
@@ -159,7 +160,7 @@ impl CPU
         return OpcodeArg { address:0, value:0 };
     }
 
-    pub fn next_u8_from_rom(nes : &mut System) -> Option<u8>
+    pub fn next_byte_from_rom(nes : &mut System) -> Option<byte>
     {
         if let Some(value) = nes.rom.get(nes.cpu.program_counter)
         {
@@ -170,11 +171,11 @@ impl CPU
         return None;
     }
 
-    pub fn next_u16_from_rom(nes : &mut System) -> Option<u16>
+    pub fn next_word_from_rom(nes : &mut System) -> Option<word>
     {
         if let (Some(low), Some(high)) = (nes.rom.get(nes.cpu.program_counter), nes.rom.get(nes.cpu.program_counter+1))
         {
-            let value = ((*low as u16) << 8) | (*high as u16);
+            let value = ((*low as word) << 8) | (*high as word);
             nes.cpu.program_counter += 2;
             return Some(value);
         }

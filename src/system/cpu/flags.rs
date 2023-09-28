@@ -1,3 +1,4 @@
+use crate::type_alias::byte;
 
 pub struct CPUFlags
 {
@@ -13,19 +14,19 @@ pub struct CPUFlags
 
 impl CPUFlags
 {
-    pub fn to_byte(self : &CPUFlags) -> u8
+    pub fn to_byte(self : &CPUFlags) -> byte
     {
-        return ((self.negative  as u8) << 7)
-             | ((self.overflow  as u8) << 6)
-             | ((self.reserved  as u8) << 5)
-             | ((self._break    as u8) << 4)
-             | ((self.decimal   as u8) << 3)
-             | ((self.interrupt as u8) << 2)
-             | ((self.zero      as u8) << 1)
-             | ((self.carry     as u8) << 0);
+        return ((self.negative  as byte) << 7)
+             | ((self.overflow  as byte) << 6)
+             | ((self.reserved  as byte) << 5)
+             | ((self._break    as byte) << 4)
+             | ((self.decimal   as byte) << 3)
+             | ((self.interrupt as byte) << 2)
+             | ((self.zero      as byte) << 1)
+             | ((self.carry     as byte) << 0);
     }
 
-    pub fn from_byte(value : u8) -> Self
+    pub fn from_byte(value : byte) -> Self
     {
         return CPUFlags
         {

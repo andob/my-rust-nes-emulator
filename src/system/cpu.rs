@@ -2,6 +2,7 @@ use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_map;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::System;
+use crate::type_alias::{byte, word};
 
 mod opcodes;
 mod program_iterator;
@@ -11,11 +12,11 @@ mod flags;
 #[allow(non_snake_case)]
 pub struct CPU
 {
-    pub A : u8, //Accumulator register
-    pub X : u8, //X index register
-    pub Y : u8, //Y index register
+    pub A : byte, //Accumulator register
+    pub X : byte, //X index register
+    pub Y : byte, //Y index register
     pub stack : CPUStack,
-    pub program_counter : usize,
+    pub program_counter : word,
     pub flags : CPUFlags,
 }
 
@@ -40,7 +41,7 @@ impl CPU
 
         nes.cpu.program_counter = 0;
 
-        while let Some(opcode_key) = CPU::next_u8_from_rom(nes)
+        while let Some(opcode_key) = CPU::next_byte_from_rom(nes)
         {
             if let Some(opcode) = opcodes.get(&opcode_key)
             {
