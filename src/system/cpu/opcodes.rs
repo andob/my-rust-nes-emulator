@@ -3,14 +3,13 @@ use maplit2::hashmap;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::program_iterator::AddressingMode;
 use crate::system::cpu::stack::CPUStack;
-use crate::system::System;
-use crate::type_alias::{byte, word};
+use crate::system::{address, byte, System};
 
 pub struct Opcode
 {
     pub name : String,
     pub addressing_mode : AddressingMode,
-    pub lambda : fn(&mut System, word, byte) -> (),
+    pub lambda : fn(&mut System, address, byte) -> (),
     pub expected_time : u8,
 }
 
@@ -66,6 +65,7 @@ pub fn build_opcodes_map() -> HashMap<byte, Opcode>
         0xD0 => opcode!(bne, 2, AddressingMode::Relative),
         0xF0 => opcode!(beq, 2, AddressingMode::Relative),
         0x00 => opcode!(brk, 7, AddressingMode::Implied),
+        0xC9 => opcode!(cmp, 2, AddressingMode::Immediate),
         0xC5 => opcode!(cmp, 3, AddressingMode::ZeroPage),
         0xD5 => opcode!(cmp, 4, AddressingMode::ZeroPageXIndexed),
         0xCD => opcode!(cmp, 4, AddressingMode::Absolute),
@@ -189,15 +189,31 @@ pub fn build_opcodes_map() -> HashMap<byte, Opcode>
 
 macro_rules! is_negative
 {
-    ($arg : expr) => {{ ($arg)>>7==1 }}
+    ($arg : expr) => {{ (($arg)>>7==1) }}
 }
 
-fn adc(_nes : &mut System, _address : word, _value : byte)
+fn adc(nes : &mut System, _address : address, value : byte)
 {
-    todo!()
+    //add with carry
+    if nes.cpu.flags.decimal
+    {
+        //todo implement add with decimal mode
+    }
+    else
+    {
+        //ADC - Add Memory to Accumulator with Carry
+        let new_value_16b = (nes.cpu.A as i16) + (value as i16) + (nes.cpu.flags.carry as i16);
+        let new_value_8b = (new_value_16b & 0xFF) as u8;
+        let old_accumulator = nes.cpu.A;
+        nes.cpu.A = new_value_8b;
+        nes.cpu.flags.carry = new_value_16b > 0xFF;
+        nes.cpu.flags.overflow = is_negative!(old_accumulator) ^ is_negative!(new_value_8b);
+        nes.cpu.flags.negative = is_negative!(new_value_8b);
+        nes.cpu.flags.zero = new_value_8b==0;
+    }
 }
 
-fn and(nes : &mut System, _address : word, value : byte)
+fn and(nes : &mut System, _address : address, value : byte)
 {
     //logical AND value with Accumulator
     let new_value = nes.cpu.A & value;
@@ -206,7 +222,7 @@ fn and(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn asl(nes : &mut System, address : word, value : byte)
+fn asl(nes : &mut System, address : address, value : byte)
 {
     //arithmetic shift left
     nes.cpu.flags.carry = (value & 0b10000000) >> 7 == 1;
@@ -217,7 +233,7 @@ fn asl(nes : &mut System, address : word, value : byte)
     else { nes.cpu.A = new_value; }
 }
 
-fn bit(nes : &mut System, _address : word, value : byte)
+fn bit(nes : &mut System, _address : address, value : byte)
 {
     //test bits
     nes.cpu.flags.negative = (value & 0b10000000) >> 7 == 1;
@@ -225,108 +241,137 @@ fn bit(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.zero = (value & nes.cpu.A) == 0;
 }
 
-fn bpl(nes : &mut System, _address : word, offset : byte)
+fn branch(nes : &mut System, signed_offset : byte)
+{
+    let abs_offset = (signed_offset as i8).abs() as address;
+    if is_negative!(signed_offset)
+    {
+        nes.cpu.program_counter = nes.cpu.program_counter.wrapping_sub(abs_offset);
+    }
+    else
+    {
+        nes.cpu.program_counter = nes.cpu.program_counter.wrapping_add(abs_offset);
+    }
+}
+
+fn bpl(nes : &mut System, _address : address, offset : byte)
 {
     //branch on result plus
     if !nes.cpu.flags.negative
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bmi(nes : &mut System, _address : word, offset : byte)
+fn bmi(nes : &mut System, _address : address, offset : byte)
 {
     //branch on result minus
     if nes.cpu.flags.negative
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bvc(nes : &mut System, _address : word, offset : byte)
+fn bvc(nes : &mut System, _address : address, offset : byte)
 {
     //branch on overflow clear
     if !nes.cpu.flags.overflow
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bvs(nes : &mut System, _address : word, offset : byte)
+fn bvs(nes : &mut System, _address : address, offset : byte)
 {
     //branch on overflow set
     if nes.cpu.flags.overflow
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bcc(nes : &mut System, _address : word, offset : byte)
+fn bcc(nes : &mut System, _address : address, offset : byte)
 {
     //branch on carry clear
     if !nes.cpu.flags.carry
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bcs(nes : &mut System, _address : word, offset : byte)
+fn bcs(nes : &mut System, _address : address, offset : byte)
 {
     //branch on carry set
     if nes.cpu.flags.carry
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn bne(nes : &mut System, _address : word, offset : byte)
+fn bne(nes : &mut System, _address : address, offset : byte)
 {
     //branch on result not zero
     if !nes.cpu.flags.zero
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn beq(nes : &mut System, _address : word, offset : byte)
+fn beq(nes : &mut System, _address : address, offset : byte)
 {
     //branch on result zero
     if nes.cpu.flags.zero
     {
-        nes.cpu.program_counter += offset as word;
+        branch(nes, offset);
     }
 }
 
-fn brk(_nes : &mut System, _address : word, _value : byte)
+fn brk(_nes : &mut System, _address : address, _value : byte)
 {
-    todo!()
+    //break!
+    //todo implement interrupts
 }
 
-fn cmp(_nes : &mut System, _address : word, _value : byte)
+fn cmp(nes : &mut System, _address : address, value : byte)
 {
-    todo!()
+    //substract Accumulator minus memory, set flags
+    let (left, right) = (nes.cpu.A as i8, value as i8);
+    let new_value = left.wrapping_sub(right);
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = new_value<0;
+    nes.cpu.flags.carry = value<=nes.cpu.A;
 }
 
-fn cpx(_nes : &mut System, _address : word, _value : byte)
+fn cpx(nes : &mut System, _address : address, value : byte)
 {
-    todo!()
+    //substract X minus memory, set flags
+    let (left, right) = (nes.cpu.X as i8, value as i8);
+    let new_value = left.wrapping_sub(right);
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = new_value<0;
+    nes.cpu.flags.carry = value<=nes.cpu.X;
 }
 
-fn cpy(_nes : &mut System, _address : word, _value : byte)
+fn cpy(nes : &mut System, _address : address, value : byte)
 {
-    todo!()
+    //substract Accumulator minus memory, set flags
+    let (left, right) = (nes.cpu.Y as i8, value as i8);
+    let new_value = left.wrapping_sub(right);
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = new_value<0;
+    nes.cpu.flags.carry = value<=nes.cpu.Y;
 }
 
-fn dec(nes : &mut System, address : word, value : byte)
+fn dec(nes : &mut System, address : address, value : byte)
 {
     //decrement memory
-    let new_value = value-1;
+    let new_value = value.wrapping_sub(1);
     nes.ram.put(address, new_value);
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn eor(nes : &mut System, _address : word, value : byte)
+fn eor(nes : &mut System, _address : address, value : byte)
 {
     //logical XOR value with Accumulator
     let new_value = nes.cpu.A ^ value;
@@ -335,68 +380,73 @@ fn eor(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn clc(nes : &mut System, _address : word, _value : byte)
+fn clc(nes : &mut System, _address : address, _value : byte)
 {
     //clear carry flag
     nes.cpu.flags.carry = false;
 }
 
-fn sec(nes : &mut System, _address : word, _value : byte)
+fn sec(nes : &mut System, _address : address, _value : byte)
 {
     //set carry flag
     nes.cpu.flags.carry = true;
 }
 
-fn cli(nes : &mut System, _address : word, _value : byte)
+fn cli(nes : &mut System, _address : address, _value : byte)
 {
     //clear interrupt disable flag
     nes.cpu.flags.interrupt = false;
 }
 
-fn sei(nes : &mut System, _address : word, _value : byte)
+fn sei(nes : &mut System, _address : address, _value : byte)
 {
     //set interrupt disable flag
     nes.cpu.flags.interrupt = true;
 }
 
-fn clv(nes : &mut System, _address : word, _value : byte)
+fn clv(nes : &mut System, _address : address, _value : byte)
 {
     //clear overflow flag
     nes.cpu.flags.overflow = false;
 }
 
-fn cld(nes : &mut System, _address : word, _value : byte)
+fn cld(nes : &mut System, _address : address, _value : byte)
 {
     //clear decimal mode flag
     nes.cpu.flags.decimal = false;
 }
 
-fn sed(nes : &mut System, _address : word, _value : byte)
+fn sed(nes : &mut System, _address : address, _value : byte)
 {
     //set decimal mode flag
     nes.cpu.flags.decimal = true;
 }
 
-fn inc(nes : &mut System, address : word, value : byte)
+fn inc(nes : &mut System, address : address, value : byte)
 {
     //increment memory
-    let new_value = value+1;
+    let new_value = value.wrapping_add(1);
     nes.ram.put(address, new_value);
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn jmp(_nes : &mut System, _address : word, _value : byte)
+fn jmp(nes : &mut System, address : address, _value : byte)
 {
-    todo!()
+    //goto / jump
+    nes.cpu.program_counter = address;
 }
 
-fn jsr(_nes : &mut System, _address : word, _value : byte)
+fn jsr(nes : &mut System, address : address, _value : byte)
 {
-    todo!()
+    //jump to subroutine
+    nes.cpu.program_counter -= 2;
+    CPUStack::push(nes, ((nes.cpu.program_counter>>8)&0xFF) as byte);
+    CPUStack::push(nes, (nes.cpu.program_counter&0xFF) as byte);
+    nes.cpu.program_counter = address;
 }
 
-fn lda(nes : &mut System, _address : word, value : byte)
+fn lda(nes : &mut System, _address : address, value : byte)
 {
     //load memory into Accumulator
     nes.cpu.A = value;
@@ -404,7 +454,7 @@ fn lda(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.negative = is_negative!(value);
 }
 
-fn ldx(nes : &mut System, _address : word, value : byte)
+fn ldx(nes : &mut System, _address : address, value : byte)
 {
     //load memory into register X
     nes.cpu.X = value;
@@ -412,7 +462,7 @@ fn ldx(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.negative = is_negative!(value);
 }
 
-fn ldy(nes : &mut System, _address : word, value: byte)
+fn ldy(nes : &mut System, _address : address, value: byte)
 {
     //load memory into register Y
     nes.cpu.Y = value;
@@ -420,7 +470,7 @@ fn ldy(nes : &mut System, _address : word, value: byte)
     nes.cpu.flags.negative = is_negative!(value);
 }
 
-fn lsr(nes : &mut System, address : word, value : byte)
+fn lsr(nes : &mut System, address : address, value : byte)
 {
     //logical shift right
     nes.cpu.flags.carry = value & 0b00000001 == 1;
@@ -431,12 +481,12 @@ fn lsr(nes : &mut System, address : word, value : byte)
     else { nes.cpu.A = new_value; }
 }
 
-fn nop(_nes : &mut System, _address : word, _value : byte)
+fn nop(_nes : &mut System, _address : address, _value : byte)
 {
     //no operation!
 }
 
-fn ora(nes : &mut System, _address : word, value : byte)
+fn ora(nes : &mut System, _address : address, value : byte)
 {
     //logical OR value with Accumulator
     let new_value = nes.cpu.A | value;
@@ -445,7 +495,7 @@ fn ora(nes : &mut System, _address : word, value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn tax(nes : &mut System, _address : word, _value : byte)
+fn tax(nes : &mut System, _address : address, _value : byte)
 {
     //transfer Accumulator into register X
     let new_value = nes.cpu.A;
@@ -454,7 +504,7 @@ fn tax(nes : &mut System, _address : word, _value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn txa(nes : &mut System, _address : word, _value : byte)
+fn txa(nes : &mut System, _address : address, _value : byte)
 {
     //transfer register X into Accumulator
     let new_value = nes.cpu.X;
@@ -463,25 +513,25 @@ fn txa(nes : &mut System, _address : word, _value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn dex(nes : &mut System, _address : word, _value : byte)
+fn dex(nes : &mut System, _address : address, _value : byte)
 {
     //decrement register X
-    let new_value = nes.cpu.X-1;
+    let new_value = nes.cpu.X.wrapping_sub(1);
     nes.cpu.X = new_value;
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn inx(nes : &mut System, _address : word, _value : byte)
+fn inx(nes : &mut System, _address : address, _value : byte)
 {
     //increment register X
-    let new_value = nes.cpu.X+1;
+    let new_value = nes.cpu.X.wrapping_add(1);
     nes.cpu.X = new_value;
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn tay(nes : &mut System, _address : word, _value : byte)
+fn tay(nes : &mut System, _address : address, _value : byte)
 {
     //transfer Accumulator into register Y
     let new_value = nes.cpu.A;
@@ -490,7 +540,7 @@ fn tay(nes : &mut System, _address : word, _value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn tya(nes : &mut System, _address : word, _value : byte)
+fn tya(nes : &mut System, _address : address, _value : byte)
 {
     //transfer register Y into Accumulator
     let new_value = nes.cpu.Y;
@@ -499,25 +549,25 @@ fn tya(nes : &mut System, _address : word, _value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn dey(nes : &mut System, _address : word, _value : byte)
+fn dey(nes : &mut System, _address : address, _value : byte)
 {
     //decrement register Y
-    let new_value = nes.cpu.Y-1;
+    let new_value = nes.cpu.Y.wrapping_sub(1);
     nes.cpu.Y = new_value;
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn iny(nes : &mut System, _address : word, _value : byte)
+fn iny(nes : &mut System, _address : address, _value : byte)
 {
     //increment register Y
-    let new_value = nes.cpu.Y+1;
+    let new_value = nes.cpu.Y.wrapping_add(1);
     nes.cpu.Y = new_value;
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn rol(nes : &mut System, address : word, value : byte)
+fn rol(nes : &mut System, address : address, value : byte)
 {
     //rotate left
     let bit = (value & 0b10000000) >> 7;
@@ -529,7 +579,7 @@ fn rol(nes : &mut System, address : word, value : byte)
     else { nes.cpu.A = new_value; }
 }
 
-fn ror(nes : &mut System, address : word, value : byte)
+fn ror(nes : &mut System, address : address, value : byte)
 {
     //rotate right
     let bit = value & 0b00000001;
@@ -541,34 +591,59 @@ fn ror(nes : &mut System, address : word, value : byte)
     else { nes.cpu.A = new_value; }
 }
 
-fn rti(_nes : &mut System, _address : word, _value : byte)
+fn rti(_nes : &mut System, _address : address, _value : byte)
 {
-    todo!()
+    //return from interrupt
+    //todo implement interrupts
 }
 
-fn rts(_nes : &mut System, _address : word, _value : byte)
+fn rts(nes : &mut System, _address : address, _value : byte)
 {
-    todo!()
+    //return from subroutine
+    if let Some(low) = CPUStack::pop(nes)
+    {
+        if let Some(high) = CPUStack::pop(nes)
+        {
+            let new_address = 2+(((high as address)<<8) | (low as address));
+            nes.cpu.program_counter = new_address;
+        }
+    }
 }
 
-fn sbc(_nes : &mut System, _address : word, _value : byte)
+fn sbc(nes : &mut System, _address : address, value : byte)
 {
-    todo!()
+    //substract with carry
+    if nes.cpu.flags.decimal
+    {
+        //todo implement substract with decimal mode
+    }
+    else
+    {
+        let new_value_16b = (nes.cpu.A as i16) - (value as i16) - ((!nes.cpu.flags.carry) as i16);
+        let sign_flag = if new_value_16b<0 { -1 } else { 1 };
+        let new_value_8b = ((new_value_16b.abs()&0xFF) as i8) * sign_flag;
+        let old_accumulator = nes.cpu.A;
+        nes.cpu.A = new_value_8b as u8;
+        nes.cpu.flags.carry = old_accumulator>=value;
+        nes.cpu.flags.overflow = (new_value_8b as u8)>0x7F;
+        nes.cpu.flags.negative = is_negative!(new_value_8b as u8);
+        nes.cpu.flags.zero = new_value_8b==0;
+    }
 }
 
-fn sta(nes : &mut System, address : word, _value : byte)
+fn sta(nes : &mut System, address : address, _value : byte)
 {
     //store Accumulator into memory
     nes.ram.put(address, nes.cpu.A);
 }
 
-fn txs(nes : &mut System, _address : word, _value : byte)
+fn txs(nes : &mut System, _address : address, _value : byte)
 {
     //transfer register X into Stack Pointer
     nes.cpu.stack.set_pointer(nes.cpu.X);
 }
 
-fn tsx(nes : &mut System, _address : word, _value : byte)
+fn tsx(nes : &mut System, _address : address, _value : byte)
 {
     //transfer Stack Pointer into register X
     let new_value = nes.cpu.stack.get_pointer();
@@ -577,42 +652,46 @@ fn tsx(nes : &mut System, _address : word, _value : byte)
     nes.cpu.flags.negative = is_negative!(new_value);
 }
 
-fn pha(nes : &mut System, _address : word, _value : byte)
+fn pha(nes : &mut System, _address : address, _value : byte)
 {
     //push Accumulator on Stack
     CPUStack::push(nes, nes.cpu.A);
 }
 
-fn pla(nes : &mut System, _address : word, _value : byte)
+fn pla(nes : &mut System, _address : address, _value : byte)
 {
     //pop Stack into Accumulator
-    let new_value = CPUStack::pop(nes);
-    nes.cpu.A = new_value;
-    nes.cpu.flags.zero = new_value==0;
-    nes.cpu.flags.negative = is_negative!(new_value);
+    if let Some(new_value) = CPUStack::pop(nes)
+    {
+        nes.cpu.A = new_value;
+        nes.cpu.flags.zero = new_value==0;
+        nes.cpu.flags.negative = is_negative!(new_value);
+    }
 }
 
-fn php(nes : &mut System, _address : word, _value : byte)
+fn php(nes : &mut System, _address : address, _value : byte)
 {
     //push Processor Flags on Stack
     let byte = nes.cpu.flags.to_byte();
     CPUStack::push(nes, byte);
 }
 
-fn plp(nes : &mut System, _address : word, _value : byte)
+fn plp(nes : &mut System, _address : address, _value : byte)
 {
     //pull Stack into Processor Flags
-    let byte = CPUStack::pop(nes);
-    nes.cpu.flags = CPUFlags::from_byte(byte);
+    if let Some(byte) = CPUStack::pop(nes)
+    {
+        nes.cpu.flags = CPUFlags::from_byte(byte);
+    }
 }
 
-fn stx(nes : &mut System, address : word, _value : byte)
+fn stx(nes : &mut System, address : address, _value : byte)
 {
     //store register X into memory
     nes.ram.put(address, nes.cpu.A);
 }
 
-fn sty(nes : &mut System, address : word, _value : byte)
+fn sty(nes : &mut System, address : address, _value : byte)
 {
     //store register Y into memory
     nes.ram.put(address, nes.cpu.A);

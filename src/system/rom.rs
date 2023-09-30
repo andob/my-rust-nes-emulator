@@ -1,4 +1,4 @@
-use crate::type_alias::{byte, word};
+use crate::system::{address, byte};
 
 pub struct ROM
 {
@@ -12,8 +12,8 @@ impl ROM
         return ROM { bytes };
     }
 
-    pub fn get(self : &ROM, index : word) -> Option<&byte>
+    pub fn get(self : &ROM, index : address) -> Option<byte>
     {
-        return self.bytes.get(index as usize);
+        return self.bytes.get(index as usize).cloned();
     }
 }

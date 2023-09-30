@@ -1,4 +1,6 @@
-use crate::type_alias::{byte, word};
+use crate::system::{address, byte};
+
+const RAM_SIZE : usize = 2*1024; //2KB
 
 pub struct RAM
 {
@@ -9,20 +11,18 @@ impl RAM
 {
     pub fn new() -> RAM
     {
-        let ram_size = 2*1024; //2KB
-        return RAM { bytes: vec![0; ram_size] };
+        return RAM { bytes: vec![0; RAM_SIZE] };
     }
 
-    pub fn get(self : &RAM, index : word) -> Option<&byte>
+    pub fn get(self : &RAM, raw_address : address) -> byte
     {
-        return self.bytes.get(index as usize);
+        let address = (raw_address as usize) % RAM_SIZE;
+        return self.bytes.get(address).cloned().unwrap_or_default();
     }
 
-    pub fn put(self : &mut RAM, address : word, value : byte)
+    pub fn put(self : &mut RAM, raw_address : address, value : byte)
     {
-        if (address as usize) < self.bytes.len()
-        {
-            self.bytes[address as usize] = value;
-        }
+        let address = (raw_address as usize) % RAM_SIZE;
+        self.bytes[address] = value;
     }
 }

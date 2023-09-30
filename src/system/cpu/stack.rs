@@ -1,12 +1,11 @@
-use crate::system::System;
-use crate::type_alias::{byte, word};
+use crate::system::{address, byte, System};
 
-const STACK_TOP_ADDRESS : word = 0x01FF;
-const STACK_BOTTOM_ADDRESS : word = 0x0100;
+const STACK_TOP_ADDRESS : address = 0x01FF;
+const STACK_BOTTOM_ADDRESS : address = 0x0100;
 
 pub struct CPUStack
 {
-    pointer : word
+    pointer : address
 }
 
 impl CPUStack
@@ -27,18 +26,16 @@ impl CPUStack
         }
     }
 
-    pub fn pop(nes : &mut System) -> byte
+    pub fn pop(nes : &mut System) -> Option<byte>
     {
         let new_stack_pointer = nes.cpu.stack.pointer+1;
         if new_stack_pointer >= STACK_BOTTOM_ADDRESS && new_stack_pointer <= STACK_TOP_ADDRESS
         {
-            if let Some(value) = nes.ram.get(new_stack_pointer)
-            {
-                nes.cpu.stack.pointer = new_stack_pointer;
-                return *value;
-            }
+            let value = nes.ram.get(new_stack_pointer);
+            nes.cpu.stack.pointer = new_stack_pointer;
+            return Some(value);
         }
-        return 0;
+        return None;
     }
 
     pub fn get_pointer(self : &CPUStack) -> byte
@@ -48,7 +45,7 @@ impl CPUStack
 
     pub fn set_pointer(self : &mut CPUStack, raw_pointer : byte)
     {
-        let new_pointer = STACK_BOTTOM_ADDRESS | raw_pointer as word;
+        let new_pointer = STACK_BOTTOM_ADDRESS | raw_pointer as address;
         if new_pointer >= STACK_BOTTOM_ADDRESS && new_pointer <= STACK_TOP_ADDRESS
         {
             self.pointer = new_pointer;

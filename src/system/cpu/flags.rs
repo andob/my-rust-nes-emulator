@@ -1,13 +1,14 @@
-use crate::type_alias::byte;
+use std::fmt::{Display, Formatter};
+use crate::system::byte;
 
 pub struct CPUFlags
 {
     pub negative : bool,
     pub overflow : bool,
     pub reserved : bool,
-    pub _break : bool,
+    pub _break : bool, //todo how is this used?
     pub decimal : bool,
-    pub interrupt : bool,
+    pub interrupt : bool, //todo how is this used?
     pub zero : bool,
     pub carry : bool,
 }
@@ -60,3 +61,12 @@ impl PartialEq<CPUFlags> for CPUFlags
 }
 
 impl Eq for CPUFlags {}
+
+impl Display for CPUFlags
+{
+    fn fmt(&self, f : &mut Formatter<'_>) -> std::fmt::Result
+    {
+        write!(f, "negative:{}\noverflow:{}\nbreak:{}\ndecimal:{}\ninterrupt:{}\nzero:{}\ncarry:{}",
+            self.negative, self.overflow, self._break, self.decimal, self.interrupt, self.zero, self.carry)
+    }
+}
