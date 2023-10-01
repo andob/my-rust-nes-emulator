@@ -3,9 +3,30 @@ name = "nes-emulator"
 version = "1.0.0"
 edition = "2021"
 
-[dependencies]
-anyhow = "1.0.75"
-rand = "0.8.5"
-sdl2 = "0.35.2"
-maplit2 = "1.0.5"
-itertools = "0.11.0"
+# generic Result<> with any error
+[dependencies.anyhow]
+version = "1.0.75"
+
+# random number generator
+[dependencies.rand]
+version = "0.8.5"
+
+# Simple DirectMedia Layer bindings
+[dependencies.sdl2]
+version = "0.35.2"
+default-features = false
+features = ["ttf"]
+
+# hashmap! literal macro
+[dependencies.maplit2]
+version = "1.0.5"
+
+# iter extensions
+[dependencies.itertools]
+version = "0.11.0"
+
+# Linux system API bindings
+[dependencies.nix]
+version = "0.27.1"
+default-features = false
+features = ["time"]

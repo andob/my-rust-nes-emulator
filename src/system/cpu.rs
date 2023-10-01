@@ -1,14 +1,15 @@
-use std::thread;
-use std::time::Duration;
+use crate::debug_log;
 use crate::system::cpu::flags::CPUFlags;
-use crate::system::cpu::opcodes::build_opcodes_map;
+use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, Debugger, System};
+use crate::system::cpu::clock::CPUClock;
 
 mod opcodes;
 mod program_iterator;
 mod stack;
 mod flags;
+mod clock;
 
 #[allow(non_snake_case)]
 pub struct CPU
@@ -17,9 +18,9 @@ pub struct CPU
     pub X : byte, //X index register
     pub Y : byte, //Y index register
     pub stack : CPUStack,
+    pub clock : CPUClock,
     pub program_counter : address,
     pub flags : CPUFlags,
-    pub lag_factor_in_nanos : u64,
 }
 
 impl CPU
@@ -32,6 +33,7 @@ impl CPU
             X: 0,
             Y: 0,
             stack: CPUStack::new(),
+            clock: CPUClock::new(),
             program_counter: 0,
             flags: CPUFlags
             {
@@ -44,34 +46,28 @@ impl CPU
                 zero: false,
                 carry: false,
             },
-            lag_factor_in_nanos: 1,
         };
     }
 
     pub fn run(nes : &mut System, debugger : Box<dyn Debugger>)
     {
-        let opcodes = build_opcodes_map();
+        let opcodes = build_opcodes_slice();
 
-        while let Some(opcode_key) = CPU::next_byte_from_rom(nes)
+        loop
         {
-            let opcode_program_counter = nes.cpu.program_counter-1;
-            if let Some(opcode) = opcodes.get(&opcode_key)
-            {
-                let (address, value) = CPU::next_argument_from_rom(nes, &opcode.addressing_mode);
+            nes.cpu.clock.notify_cpu_cycle_started();
 
-                let opcode_description = format!("{:#06X} {} {:#06X} {:#04X}",
-                     opcode_program_counter, opcode.name, address, value);
-                debugger.before_cpu_tick(nes, &opcode_description);
+            let opcode_key = CPU::next_byte_from_rom(nes);
+            let opcode = &opcodes[opcode_key as usize];
+            let (address, value) = CPU::next_argument_from_rom(nes, &opcode);
 
-                (opcode.lambda)(nes, address, value);
+            debugger.before_cpu_opcode(nes);
+            (opcode.lambda)(nes, address, value);
+            debugger.after_cpu_opcode(nes);
 
-                thread::sleep(Duration::from_micros((opcode.expected_time as u64)*nes.cpu.lag_factor_in_nanos));
-                debugger.after_cpu_tick(nes, &opcode_description);
-            }
-            else
-            {
-                panic!("Unknown opcode {:#04X}", opcode_key);
-            }
+            nes.cpu.clock.notify_cpu_cycle_stopped(&opcode);
+
+            debug_log!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
         }
     }
 }

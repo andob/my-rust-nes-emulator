@@ -2,18 +2,19 @@ use crate::system::{address, byte};
 
 pub struct ROM
 {
-    bytes : Vec<byte>
+    bytes : Box<[byte]>
 }
 
 impl ROM
 {
-    pub fn new(bytes : Vec<byte>) -> ROM
+    pub fn new(bytes : Box<[byte]>) -> ROM
     {
         return ROM { bytes };
     }
 
-    pub fn get(self : &ROM, index : address) -> Option<byte>
+    pub fn get(self : &ROM, raw_address : address) -> byte
     {
-        return self.bytes.get(index as usize).cloned();
+        let address = (raw_address as usize) % self.bytes.len();
+        return self.bytes[address];
     }
 }

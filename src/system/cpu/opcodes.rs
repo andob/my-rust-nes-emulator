@@ -1,190 +1,208 @@
-use std::collections::HashMap;
-use maplit2::hashmap;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::program_iterator::AddressingMode;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, System};
+use crate::system::cpu::clock::ExpectedDuration;
 
 pub struct Opcode
 {
+    pub key : byte,
     pub name : String,
     pub addressing_mode : AddressingMode,
     pub lambda : fn(&mut System, address, byte) -> (),
-    pub expected_time : u8,
+    pub expected_duration : ExpectedDuration,
 }
 
 macro_rules! opcode
 {
-    ($name : expr, $expected_time : expr, $addressing_mode : expr) =>
-    {
+    ($key : expr, $name : expr, $expected_duration : expr, $addressing_mode : expr) =>
+    {{
+        Opcode
         {
-            Opcode
-            {
-                name: stringify!($name).to_uppercase(),
-                lambda: |nes,address,value| $name(nes,address,value),
-                expected_time: $expected_time,
-                addressing_mode: $addressing_mode,
-            }
+            key: $key, lambda: $name,
+            name: stringify!($name).to_uppercase(),
+            expected_duration: $expected_duration,
+            addressing_mode: $addressing_mode,
         }
-    }
+    }}
 }
 
-pub fn build_opcodes_map() -> HashMap<byte, Opcode>
+pub fn build_opcodes_slice() -> Box<[Opcode]>
 {
-    return hashmap!
+    let mut opcodes = vec![
+        opcode!(0x69, adc, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x65, adc, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x75, adc, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x6D, adc, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x7D, adc, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x79, adc, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0x61, adc, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x71, adc, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0x29, and, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x25, and, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x35, and, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x2D, and, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x3D, and, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x39, and, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0x21, and, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x31, and, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0x0A, asl, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x06, asl, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x16, asl, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x0E, asl, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x1E, asl, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x24, bit, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x2C, bit, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x10, bpl, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0x30, bmi, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0x50, bvc, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0x70, bvs, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0x90, bcc, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0xB0, bcs, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0xD0, bne, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0xF0, beq, ExpectedDuration::bra, AddressingMode::Relative),
+        opcode!(0x00, brk, ExpectedDuration::_7,  AddressingMode::Implied),
+        opcode!(0xC9, cmp, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xC5, cmp, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xD5, cmp, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xCD, cmp, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xDD, cmp, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xD9, cmp, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xC1, cmp, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0xD1, cmp, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0xE0, cpx, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xE4, cpx, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xEC, cpx, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xC0, cpy, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xC4, cpy, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xCC, cpy, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xC6, dec, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0xD6, dec, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xCE, dec, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0xDE, dec, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x49, eor, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x45, eor, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x55, eor, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x4D, eor, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x5D, eor, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x59, eor, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0x41, eor, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x51, eor, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0x18, clc, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x38, sec, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x58, cli, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x78, sei, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xB8, clv, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xD8, cld, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xF8, sed, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xE6, inc, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0xF6, inc, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xEE, inc, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0xFE, inc, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x4C, jmp, ExpectedDuration::_3,  AddressingMode::Absolute),
+        opcode!(0x6C, jmp, ExpectedDuration::_5,  AddressingMode::Indirect),
+        opcode!(0x20, jsr, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0xA9, lda, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xA5, lda, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xB5, lda, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xAD, lda, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xBD, lda, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xB9, lda, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xA1, lda, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0xB1, lda, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0xA2, ldx, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xA6, ldx, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xB6, ldx, ExpectedDuration::_4,  AddressingMode::ZeroPageYIndexed),
+        opcode!(0xAE, ldx, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xBE, ldx, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xA0, ldy, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xA4, ldy, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xB4, ldy, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xAC, ldy, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xBC, ldy, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x4A, lsr, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x46, lsr, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x56, lsr, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x4E, lsr, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x5E, lsr, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0xEA, nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x09, ora, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x05, ora, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x15, ora, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x0D, ora, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x1D, ora, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x19, ora, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0x01, ora, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x11, ora, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0xAA, tax, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x8A, txa, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xCA, dex, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xE8, inx, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xA8, tay, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x98, tya, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x88, dey, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xC8, iny, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x2A, rol, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x26, rol, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x36, rol, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x2E, rol, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x3E, rol, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x6A, ror, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x66, ror, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x76, ror, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x6E, ror, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x7E, ror, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x40, rti, ExpectedDuration::_6,  AddressingMode::Implied),
+        opcode!(0x60, rts, ExpectedDuration::_6,  AddressingMode::Implied),
+        opcode!(0xE9, sbc, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xE5, sbc, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xF5, sbc, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xED, sbc, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xFD, sbc, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xF9, sbc, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xE1, sbc, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0xF1, sbc, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0x85, sta, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x95, sta, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x8D, sta, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x9D, sta, ExpectedDuration::_5,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x99, sta, ExpectedDuration::_5,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x81, sta, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x91, sta, ExpectedDuration::_6,  AddressingMode::IndirectY),
+        opcode!(0x9A, txs, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xBA, tsx, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x48, pha, ExpectedDuration::_3,  AddressingMode::Implied),
+        opcode!(0x68, pla, ExpectedDuration::_4,  AddressingMode::Implied),
+        opcode!(0x08, php, ExpectedDuration::_3,  AddressingMode::Implied),
+        opcode!(0x28, plp, ExpectedDuration::_4,  AddressingMode::Implied),
+        opcode!(0x86, stx, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x96, stx, ExpectedDuration::_4,  AddressingMode::ZeroPageYIndexed),
+        opcode!(0x8E, stx, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x84, sty, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x94, sty, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x8C, sty, ExpectedDuration::_4,  AddressingMode::Absolute),
+
+        opcode!(0x02, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x03, unofficial_slo, ExpectedDuration::_7,  AddressingMode::IndirectX),
+        opcode!(0x1F, unofficial_slo, ExpectedDuration::_8,  AddressingMode::AbsoluteXIndexed),
+    ];
+
+    for unknown_opcode_key in 0x00..=0xFFu8
     {
-        0x69 => opcode!(adc, 2, AddressingMode::Immediate),
-        0x65 => opcode!(adc, 3, AddressingMode::ZeroPage),
-        0x75 => opcode!(adc, 4, AddressingMode::ZeroPageXIndexed),
-        0x6D => opcode!(adc, 4, AddressingMode::Absolute),
-        0x7D => opcode!(adc, 4, AddressingMode::AbsoluteXIndexed),
-        0x79 => opcode!(adc, 4, AddressingMode::AbsoluteYIndexed),
-        0x61 => opcode!(adc, 6, AddressingMode::IndirectX),
-        0x71 => opcode!(adc, 5, AddressingMode::IndirectY),
-        0x29 => opcode!(and, 2, AddressingMode::Immediate),
-        0x25 => opcode!(and, 3, AddressingMode::ZeroPage),
-        0x35 => opcode!(and, 4, AddressingMode::ZeroPageXIndexed),
-        0x2D => opcode!(and, 4, AddressingMode::Absolute),
-        0x3D => opcode!(and, 4, AddressingMode::AbsoluteXIndexed),
-        0x39 => opcode!(and, 4, AddressingMode::AbsoluteYIndexed),
-        0x21 => opcode!(and, 6, AddressingMode::IndirectX),
-        0x31 => opcode!(and, 5, AddressingMode::IndirectY),
-        0x0A => opcode!(asl, 2, AddressingMode::Implied),
-        0x06 => opcode!(asl, 5, AddressingMode::ZeroPage),
-        0x16 => opcode!(asl, 6, AddressingMode::ZeroPageXIndexed),
-        0x0E => opcode!(asl, 6, AddressingMode::Absolute),
-        0x1E => opcode!(asl, 7, AddressingMode::AbsoluteXIndexed),
-        0x24 => opcode!(bit, 3, AddressingMode::ZeroPage),
-        0x2C => opcode!(bit, 4, AddressingMode::Absolute),
-        0x10 => opcode!(bpl, 2, AddressingMode::Relative),
-        0x30 => opcode!(bmi, 2, AddressingMode::Relative),
-        0x50 => opcode!(bvc, 2, AddressingMode::Relative),
-        0x70 => opcode!(bvs, 2, AddressingMode::Relative),
-        0x90 => opcode!(bcc, 2, AddressingMode::Relative),
-        0xB0 => opcode!(bcs, 2, AddressingMode::Relative),
-        0xD0 => opcode!(bne, 2, AddressingMode::Relative),
-        0xF0 => opcode!(beq, 2, AddressingMode::Relative),
-        0x00 => opcode!(brk, 7, AddressingMode::Implied),
-        0xC9 => opcode!(cmp, 2, AddressingMode::Immediate),
-        0xC5 => opcode!(cmp, 3, AddressingMode::ZeroPage),
-        0xD5 => opcode!(cmp, 4, AddressingMode::ZeroPageXIndexed),
-        0xCD => opcode!(cmp, 4, AddressingMode::Absolute),
-        0xDD => opcode!(cmp, 4, AddressingMode::AbsoluteXIndexed),
-        0xD9 => opcode!(cmp, 4, AddressingMode::AbsoluteYIndexed),
-        0xC1 => opcode!(cmp, 6, AddressingMode::IndirectX),
-        0xD1 => opcode!(cmp, 5, AddressingMode::IndirectY),
-        0xE0 => opcode!(cpx, 2, AddressingMode::Immediate),
-        0xE4 => opcode!(cpx, 3, AddressingMode::ZeroPage),
-        0xEC => opcode!(cpx, 4, AddressingMode::Absolute),
-        0xC0 => opcode!(cpy, 2, AddressingMode::Immediate),
-        0xC4 => opcode!(cpy, 3, AddressingMode::ZeroPage),
-        0xCC => opcode!(cpy, 4, AddressingMode::Absolute),
-        0xC6 => opcode!(dec, 5, AddressingMode::ZeroPage),
-        0xD6 => opcode!(dec, 6, AddressingMode::ZeroPageXIndexed),
-        0xCE => opcode!(dec, 6, AddressingMode::Absolute),
-        0xDE => opcode!(dec, 7, AddressingMode::AbsoluteXIndexed),
-        0x49 => opcode!(eor, 2, AddressingMode::Immediate),
-        0x45 => opcode!(eor, 3, AddressingMode::ZeroPage),
-        0x55 => opcode!(eor, 4, AddressingMode::ZeroPageXIndexed),
-        0x4D => opcode!(eor, 4, AddressingMode::Absolute),
-        0x5D => opcode!(eor, 4, AddressingMode::AbsoluteXIndexed),
-        0x59 => opcode!(eor, 4, AddressingMode::AbsoluteYIndexed),
-        0x41 => opcode!(eor, 6, AddressingMode::IndirectX),
-        0x51 => opcode!(eor, 5, AddressingMode::IndirectY),
-        0x18 => opcode!(clc, 2, AddressingMode::Implied),
-        0x38 => opcode!(sec, 2, AddressingMode::Implied),
-        0x58 => opcode!(cli, 2, AddressingMode::Implied),
-        0x78 => opcode!(sei, 2, AddressingMode::Implied),
-        0xB8 => opcode!(clv, 2, AddressingMode::Implied),
-        0xD8 => opcode!(cld, 2, AddressingMode::Implied),
-        0xF8 => opcode!(sed, 2, AddressingMode::Implied),
-        0xE6 => opcode!(inc, 5, AddressingMode::ZeroPage),
-        0xF6 => opcode!(inc, 6, AddressingMode::ZeroPageXIndexed),
-        0xEE => opcode!(inc, 6, AddressingMode::Absolute),
-        0xFE => opcode!(inc, 7, AddressingMode::AbsoluteXIndexed),
-        0x4C => opcode!(jmp, 3, AddressingMode::Absolute),
-        0x6C => opcode!(jmp, 5, AddressingMode::Indirect),
-        0x20 => opcode!(jsr, 6, AddressingMode::Absolute),
-        0xA9 => opcode!(lda, 2, AddressingMode::Immediate),
-        0xA5 => opcode!(lda, 3, AddressingMode::ZeroPage),
-        0xB5 => opcode!(lda, 4, AddressingMode::ZeroPageXIndexed),
-        0xAD => opcode!(lda, 4, AddressingMode::Absolute),
-        0xBD => opcode!(lda, 4, AddressingMode::AbsoluteXIndexed),
-        0xB9 => opcode!(lda, 4, AddressingMode::AbsoluteYIndexed),
-        0xA1 => opcode!(lda, 6, AddressingMode::IndirectX),
-        0xB1 => opcode!(lda, 5, AddressingMode::IndirectY),
-        0xA2 => opcode!(ldx, 2, AddressingMode::Immediate),
-        0xA6 => opcode!(ldx, 3, AddressingMode::ZeroPage),
-        0xB6 => opcode!(ldx, 4, AddressingMode::ZeroPageYIndexed),
-        0xAE => opcode!(ldx, 4, AddressingMode::Absolute),
-        0xBE => opcode!(ldx, 4, AddressingMode::AbsoluteYIndexed),
-        0xA0 => opcode!(ldy, 2, AddressingMode::Immediate),
-        0xA4 => opcode!(ldy, 3, AddressingMode::ZeroPage),
-        0xB4 => opcode!(ldy, 4, AddressingMode::ZeroPageXIndexed),
-        0xAC => opcode!(ldy, 4, AddressingMode::Absolute),
-        0xBC => opcode!(ldy, 4, AddressingMode::AbsoluteXIndexed),
-        0x4A => opcode!(lsr, 2, AddressingMode::Implied),
-        0x46 => opcode!(lsr, 5, AddressingMode::ZeroPage),
-        0x56 => opcode!(lsr, 6, AddressingMode::ZeroPageXIndexed),
-        0x4E => opcode!(lsr, 6, AddressingMode::Absolute),
-        0x5E => opcode!(lsr, 7, AddressingMode::AbsoluteXIndexed),
-        0xEA => opcode!(nop, 2, AddressingMode::Implied),
-        0x09 => opcode!(ora, 2, AddressingMode::Immediate),
-        0x05 => opcode!(ora, 3, AddressingMode::ZeroPage),
-        0x15 => opcode!(ora, 4, AddressingMode::ZeroPageXIndexed),
-        0x0D => opcode!(ora, 4, AddressingMode::Absolute),
-        0x1D => opcode!(ora, 4, AddressingMode::AbsoluteXIndexed),
-        0x19 => opcode!(ora, 4, AddressingMode::AbsoluteYIndexed),
-        0x01 => opcode!(ora, 6, AddressingMode::IndirectX),
-        0x11 => opcode!(ora, 5, AddressingMode::IndirectY),
-        0xAA => opcode!(tax, 2, AddressingMode::Implied),
-        0x8A => opcode!(txa, 2, AddressingMode::Implied),
-        0xCA => opcode!(dex, 2, AddressingMode::Implied),
-        0xE8 => opcode!(inx, 2, AddressingMode::Implied),
-        0xA8 => opcode!(tay, 2, AddressingMode::Implied),
-        0x98 => opcode!(tya, 2, AddressingMode::Implied),
-        0x88 => opcode!(dey, 2, AddressingMode::Implied),
-        0xC8 => opcode!(iny, 2, AddressingMode::Implied),
-        0x2A => opcode!(rol, 2, AddressingMode::Implied),
-        0x26 => opcode!(rol, 5, AddressingMode::ZeroPage),
-        0x36 => opcode!(rol, 6, AddressingMode::ZeroPageXIndexed),
-        0x2E => opcode!(rol, 6, AddressingMode::Absolute),
-        0x3E => opcode!(rol, 7, AddressingMode::AbsoluteXIndexed),
-        0x6A => opcode!(ror, 2, AddressingMode::Implied),
-        0x66 => opcode!(ror, 5, AddressingMode::ZeroPage),
-        0x76 => opcode!(ror, 6, AddressingMode::ZeroPageXIndexed),
-        0x6E => opcode!(ror, 6, AddressingMode::Absolute),
-        0x7E => opcode!(ror, 7, AddressingMode::AbsoluteXIndexed),
-        0x40 => opcode!(rti, 6, AddressingMode::Implied),
-        0x60 => opcode!(rts, 6, AddressingMode::Implied),
-        0xE9 => opcode!(sbc, 2, AddressingMode::Immediate),
-        0xE5 => opcode!(sbc, 3, AddressingMode::ZeroPage),
-        0xF5 => opcode!(sbc, 4, AddressingMode::ZeroPageXIndexed),
-        0xED => opcode!(sbc, 4, AddressingMode::Absolute),
-        0xFD => opcode!(sbc, 4, AddressingMode::AbsoluteXIndexed),
-        0xF9 => opcode!(sbc, 4, AddressingMode::AbsoluteYIndexed),
-        0xE1 => opcode!(sbc, 6, AddressingMode::IndirectX),
-        0xF1 => opcode!(sbc, 5, AddressingMode::IndirectY),
-        0x85 => opcode!(sta, 3, AddressingMode::ZeroPage),
-        0x95 => opcode!(sta, 4, AddressingMode::ZeroPageXIndexed),
-        0x8D => opcode!(sta, 4, AddressingMode::Absolute),
-        0x9D => opcode!(sta, 5, AddressingMode::AbsoluteXIndexed),
-        0x99 => opcode!(sta, 5, AddressingMode::AbsoluteYIndexed),
-        0x81 => opcode!(sta, 6, AddressingMode::IndirectX),
-        0x91 => opcode!(sta, 6, AddressingMode::IndirectY),
-        0x9A => opcode!(txs, 2, AddressingMode::Implied),
-        0xBA => opcode!(tsx, 2, AddressingMode::Implied),
-        0x48 => opcode!(pha, 3, AddressingMode::Implied),
-        0x68 => opcode!(pla, 4, AddressingMode::Implied),
-        0x08 => opcode!(php, 3, AddressingMode::Implied),
-        0x28 => opcode!(plp, 4, AddressingMode::Implied),
-        0x86 => opcode!(stx, 3, AddressingMode::ZeroPage),
-        0x96 => opcode!(stx, 4, AddressingMode::ZeroPageYIndexed),
-        0x8E => opcode!(stx, 4, AddressingMode::Absolute),
-        0x84 => opcode!(sty, 3, AddressingMode::ZeroPage),
-        0x94 => opcode!(sty, 4, AddressingMode::ZeroPageXIndexed),
-        0x8C => opcode!(sty, 4, AddressingMode::Absolute),
-    };
+        if opcodes.iter().find(|opcode| opcode.key==unknown_opcode_key).is_none()
+        {
+            opcodes.push(Opcode {
+                key: unknown_opcode_key,
+                name: String::new(),
+                addressing_mode: AddressingMode::Unknown,
+                lambda: |_nes,_address,opcode_key| { panic!("[CPU] Unknown opcode {:#04X}!", opcode_key); },
+                expected_duration: ExpectedDuration::_2,
+            })
+        }
+    }
+
+    opcodes.sort_by(|o1, o2| byte::cmp(&o1.key, &o2.key));
+    return opcodes.into_boxed_slice();
 }
 
 macro_rules! is_negative
@@ -247,10 +265,12 @@ fn branch(nes : &mut System, signed_offset : byte)
     if is_negative!(signed_offset)
     {
         nes.cpu.program_counter = nes.cpu.program_counter.wrapping_sub(abs_offset);
+        nes.cpu.clock.notify_branch_taken();
     }
     else
     {
         nes.cpu.program_counter = nes.cpu.program_counter.wrapping_add(abs_offset);
+        nes.cpu.clock.notify_branch_taken();
     }
 }
 
@@ -697,3 +717,16 @@ fn sty(nes : &mut System, address : address, _value : byte)
     nes.ram.put(address, nes.cpu.A);
 }
 
+fn unofficial_nop(_nes : &mut System, _address : address, _value : byte)
+{
+    //no operation
+}
+
+fn unofficial_slo(nes : &mut System, _address : address, value : byte)
+{
+    //shift left one bit in memory, then OR accumulator with memory. =
+    let new_value = nes.cpu.A & (value<<1);
+    nes.cpu.A = new_value;
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = is_negative!(new_value);
+}

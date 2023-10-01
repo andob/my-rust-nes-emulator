@@ -49,7 +49,7 @@ fn create_channels() -> (FrontendChannels, BackendChannels)
 
 pub fn run_snake_game() -> Result<()>
 {
-    let executable_bytes = include_bytes!("snake.bin").to_vec();
+    let executable_bytes = *include_bytes!("snake.bin");
 
     let (frontend_channels, backend_channels) = create_channels();
 
@@ -67,8 +67,7 @@ pub fn run_snake_game() -> Result<()>
     thread::spawn(move ||
     {
         let debugger = SnakeGameDebugger::new(backend_channels);
-        let mut nes = System::new(executable_bytes);
-        nes.cpu.lag_factor_in_nanos = 25;
+        let mut nes = System::new(Box::new(executable_bytes));
         nes.run_with_debugger(Box::new(debugger));
     });
 
@@ -159,7 +158,7 @@ impl SnakeGameDebugger
 
 impl Debugger for SnakeGameDebugger
 {
-    fn before_cpu_tick(&self, nes : &mut System, opcode_description : &String)
+    fn before_cpu_opcode(&self, nes : &mut System)
     {
         nes.ram.put(RANDOM_NUMBER_GENERATOR_ADDRESS, random::<u8>());
 
@@ -167,11 +166,9 @@ impl Debugger for SnakeGameDebugger
         {
             nes.ram.put(LAST_PRESSED_BUTTON_ADDRESS, self.encode_keycode(keycode));
         }
-
-        println!("{}", opcode_description);
     }
 
-    fn after_cpu_tick(&self, nes : &mut System, _opcode_description : &String)
+    fn after_cpu_opcode(&self, nes : &mut System)
     {
         if nes.cpu.program_counter >= ROM_IN_RAM_ADDRESS
         {

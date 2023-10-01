@@ -6,25 +6,31 @@ macro_rules! codeloc
     () => { format!("{}:{}", file!(), line!()) }
 }
 
+#[macro_export]
+macro_rules! debug_log
+{
+    ($($arg:tt)*) =>
+    {{
+        // println!($($arg)*);
+    }};
+}
+
 pub trait Debugger
 {
-    fn before_cpu_tick(&self, nes : &mut System, opcode_description : &String);
-    fn after_cpu_tick(&self, nes : &mut System, opcode_description : &String);
+    fn before_cpu_opcode(&self, nes : &mut System);
+    fn after_cpu_opcode(&self, nes : &mut System);
 }
 
-pub struct DefaultDebugger {}
+pub struct EmptyDebugger {}
 
-impl DefaultDebugger
+impl EmptyDebugger
 {
-    pub fn new() -> DefaultDebugger { DefaultDebugger {} }
+    pub fn new() -> EmptyDebugger { EmptyDebugger {} }
 }
 
-impl Debugger for DefaultDebugger
+impl Debugger for EmptyDebugger
 {
-    fn before_cpu_tick(&self, _nes : &mut System, opcode_description : &String)
-    {
-        println!("[CPU] {}", opcode_description);
-    }
+    fn before_cpu_opcode(&self, _nes : &mut System) {}
 
-    fn after_cpu_tick(&self, _nes : &mut System, _opcode_description : &String) {}
+    fn after_cpu_opcode(&self, _nes : &mut System) {}
 }

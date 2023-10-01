@@ -1,5 +1,5 @@
 use crate::system::cpu::CPU;
-use crate::system::debugger::{Debugger, DefaultDebugger};
+use crate::system::debugger::{Debugger, EmptyDebugger};
 use crate::system::ram::RAM;
 use crate::system::rom::ROM;
 use crate::system::test::Test;
@@ -25,7 +25,7 @@ pub struct System
 
 impl System
 {
-    pub fn new(rom_data : Vec<u8>) -> System
+    pub fn new(rom_data : Box<[byte]>) -> System
     {
         return System
         {
@@ -39,7 +39,7 @@ impl System
 
     pub fn run(&mut self)
     {
-        let debugger = DefaultDebugger::new();
+        let debugger = EmptyDebugger::new();
         self.run_with_debugger(Box::new(debugger));
     }
 
