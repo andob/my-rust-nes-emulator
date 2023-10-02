@@ -43,6 +43,7 @@ impl CPUClock
 
     pub fn now() -> u64
     {
+        //todo make it work on windows and mac os
         return clock_gettime(ClockId::CLOCK_MONOTONIC).unwrap().num_nanoseconds() as u64;
     }
 

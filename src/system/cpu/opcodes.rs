@@ -182,24 +182,120 @@ pub fn build_opcodes_slice() -> Box<[Opcode]>
         opcode!(0x94, sty, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
         opcode!(0x8C, sty, ExpectedDuration::_4,  AddressingMode::Absolute),
 
-        opcode!(0x02, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
-        opcode!(0x03, unofficial_slo, ExpectedDuration::_7,  AddressingMode::IndirectX),
-        opcode!(0x1F, unofficial_slo, ExpectedDuration::_8,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x0B, unofficial_aac, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x2B, unofficial_aac, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x87, unofficial_aax, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x97, unofficial_aax, ExpectedDuration::_4,  AddressingMode::ZeroPageYIndexed),
+        opcode!(0x83, unofficial_aax, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0x8F, unofficial_aax, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x6B, unofficial_aar, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x4B, unofficial_asr, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xAB, unofficial_atx, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x9F, unofficial_axa, ExpectedDuration::_5,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x93, unofficial_axa, ExpectedDuration::_6,  AddressingMode::IndirectY),
+        opcode!(0xCB, unofficial_axs, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xC7, unofficial_dcp, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0xD7, unofficial_dcp, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xCF, unofficial_dcp, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0xDF, unofficial_dcp, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0xDB, unofficial_dcp, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0xC3, unofficial_dcp, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0xD3, unofficial_dcp, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0x04, unofficial_nop, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x14, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x34, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x44, unofficial_nop, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x54, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x64, unofficial_nop, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0x74, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x80, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x82, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x89, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xC2, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xD4, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xE2, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0xF4, unofficial_nop, ExpectedDuration::_4,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x1A, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x3A, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x5A, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x7A, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xDA, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0xFA, unofficial_nop, ExpectedDuration::_2,  AddressingMode::Implied),
+        opcode!(0x0C, unofficial_nop, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0x1C, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x3C, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x5C, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0x7C, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xDC, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xFC, unofficial_nop, ExpectedDuration::_4p, AddressingMode::AbsoluteXIndexed),
+        opcode!(0xE7, unofficial_isc, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0xF7, unofficial_isc, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0xEF, unofficial_isc, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0xFF, unofficial_isc, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0xFB, unofficial_isc, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0xE3, unofficial_isc, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0xF3, unofficial_isc, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0x02, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x12, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x22, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x32, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x42, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x52, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x62, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x72, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0x92, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0xB2, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0xD2, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0xF2, unofficial_hlt, ExpectedDuration::_2,  AddressingMode::Unknown),
+        opcode!(0xBB, unofficial_lar, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xA7, unofficial_lax, ExpectedDuration::_3,  AddressingMode::ZeroPage),
+        opcode!(0xB7, unofficial_lax, ExpectedDuration::_4,  AddressingMode::ZeroPageYIndexed),
+        opcode!(0xAF, unofficial_lax, ExpectedDuration::_4,  AddressingMode::Absolute),
+        opcode!(0xBF, unofficial_lax, ExpectedDuration::_4p, AddressingMode::AbsoluteYIndexed),
+        opcode!(0xA3, unofficial_lax, ExpectedDuration::_6,  AddressingMode::IndirectX),
+        opcode!(0xB3, unofficial_lax, ExpectedDuration::_5p, AddressingMode::IndirectY),
+        opcode!(0x27, unofficial_rla, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x37, unofficial_rla, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x2F, unofficial_rla, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x3F, unofficial_rla, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x3B, unofficial_rla, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x23, unofficial_rla, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0x33, unofficial_rla, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0x67, unofficial_rra, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x77, unofficial_rra, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x6F, unofficial_rra, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x7F, unofficial_rra, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x7B, unofficial_rra, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x63, unofficial_rra, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0x73, unofficial_rra, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0xEB, unofficial_sbc, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x07, unofficial_slo, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x17, unofficial_slo, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x0F, unofficial_slo, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x1F, unofficial_slo, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x1B, unofficial_slo, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x03, unofficial_slo, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0x13, unofficial_slo, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0x47, unofficial_sre, ExpectedDuration::_5,  AddressingMode::ZeroPage),
+        opcode!(0x57, unofficial_sre, ExpectedDuration::_6,  AddressingMode::ZeroPageXIndexed),
+        opcode!(0x4F, unofficial_sre, ExpectedDuration::_6,  AddressingMode::Absolute),
+        opcode!(0x5F, unofficial_sre, ExpectedDuration::_7,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x5B, unofficial_sre, ExpectedDuration::_7,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x43, unofficial_sre, ExpectedDuration::_8,  AddressingMode::IndirectX),
+        opcode!(0x53, unofficial_sre, ExpectedDuration::_8,  AddressingMode::IndirectY),
+        opcode!(0x9E, unofficial_sxa, ExpectedDuration::_5,  AddressingMode::AbsoluteYIndexed),
+        opcode!(0x9C, unofficial_sya, ExpectedDuration::_5,  AddressingMode::AbsoluteXIndexed),
+        opcode!(0x8B, unofficial_xaa, ExpectedDuration::_2,  AddressingMode::Immediate),
+        opcode!(0x9B, unofficial_xas, ExpectedDuration::_5,  AddressingMode::AbsoluteYIndexed),
     ];
 
-    for unknown_opcode_key in 0x00..=0xFFu8
-    {
-        if opcodes.iter().find(|opcode| opcode.key==unknown_opcode_key).is_none()
-        {
-            opcodes.push(Opcode {
-                key: unknown_opcode_key,
-                name: String::new(),
-                addressing_mode: AddressingMode::Unknown,
-                lambda: |_nes,_address,opcode_key| { panic!("[CPU] Unknown opcode {:#04X}!", opcode_key); },
-                expected_duration: ExpectedDuration::_2,
-            })
-        }
-    }
+    (0x00..=0xFFu8).into_iter() //find unimplemented opcodes
+        .filter(|key| opcodes.iter().find(|opcode| opcode.key==*key).is_none())
+        .for_each(|key| { panic!("CPU Opcode {:#04X} is not implemented!", key) });
+
+    (0x00..=0xFFu8).into_iter() //find duplicates
+        .filter(|key| opcodes.iter().filter(|opcode| opcode.key==*key).count()>=2)
+        .for_each(|key| { panic!("CPU Opcode {:#04X} is implemented twice!", key) });
 
     opcodes.sort_by(|o1, o2| byte::cmp(&o1.key, &o2.key));
     return opcodes.into_boxed_slice();
@@ -717,16 +813,191 @@ fn sty(nes : &mut System, address : address, _value : byte)
     nes.ram.put(address, nes.cpu.A);
 }
 
+fn unofficial_aac(nes : &mut System, _address : address, value : byte)
+{
+    //AND byte with accumulator. If result is negative then carry is set
+    let new_value = nes.cpu.A & value;
+    nes.cpu.A = new_value;
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = is_negative!(new_value);
+    nes.cpu.flags.carry = is_negative!(new_value);
+}
+
+fn unofficial_aax(nes : &mut System, address : address, _value : byte)
+{
+    //AND X register with accumulator and store result in memory
+    let new_value = nes.cpu.X & nes.cpu.A;
+    nes.ram.put(address, new_value);
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = is_negative!(new_value);
+}
+
+fn unofficial_aar(nes : &mut System, _address : address, value : byte)
+{
+    //AND byte with accumulator, then rotate one bit right in accumulator and check bit 5 and 6
+    nes.cpu.A = nes.cpu.A & value;
+    ror(nes, 0, nes.cpu.A);
+    let bit5 = ((nes.cpu.A & 0b00100000) >> 5)==1;
+    let bit6 = ((nes.cpu.A & 0b01000000) >> 6)==1;
+    if bit5 && bit6 { nes.cpu.flags.carry = true; nes.cpu.flags.overflow = false; }
+    else if !bit5 && !bit6 { nes.cpu.flags.carry = false; nes.cpu.flags.overflow = false; }
+    else if bit5 { nes.cpu.flags.carry = false; nes.cpu.flags.overflow = true; }
+    else { nes.cpu.flags.carry = true; nes.cpu.flags.overflow = true; }
+}
+
+fn unofficial_asr(nes : &mut System, _address : address, value : byte)
+{
+    //AND byte with accumulator, then shift right one bit in accumulator
+    nes.cpu.A = nes.cpu.A & value;
+    lsr(nes, 0, nes.cpu.A);
+}
+
+fn unofficial_atx(nes : &mut System, _address : address, value : byte)
+{
+    //AND byte with (accumulator or by magic constant), then transfer accumulator to X register
+    let new_value = (nes.cpu.A | 0xEE) & value;
+    nes.cpu.A = new_value;
+    nes.cpu.X = new_value;
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = is_negative!(new_value);
+}
+
+fn unofficial_axa(nes : &mut System, address : address, _value : byte)
+{
+    //AND X register with accumulator then AND result with 7 and store in memory
+    nes.ram.put(address, (nes.cpu.X & nes.cpu.A) & 7);
+}
+
+fn unofficial_axs(nes : &mut System, _address : address, value : byte)
+{
+    //AND X register with accumulator and store result in X register, then subtract byte from X register (without borrow)
+    let new_value = (nes.cpu.X & nes.cpu.A).wrapping_sub(value);
+    nes.cpu.X = new_value;
+    nes.cpu.flags.zero = new_value==0;
+    nes.cpu.flags.negative = is_negative!(new_value);
+    nes.cpu.flags.carry = value<=new_value;
+}
+
+fn unofficial_dcp(nes : &mut System, address : address, value : byte)
+{
+    //Subtract 1 from memory (without borrow)
+    let new_value = value.wrapping_sub(1);
+    nes.ram.put(address, new_value);
+    nes.cpu.flags.carry = value<=new_value;
+}
+
 fn unofficial_nop(_nes : &mut System, _address : address, _value : byte)
 {
     //no operation
 }
 
-fn unofficial_slo(nes : &mut System, _address : address, value : byte)
+fn unofficial_isc(nes : &mut System, address : address, value : byte)
 {
-    //shift left one bit in memory, then OR accumulator with memory. =
-    let new_value = nes.cpu.A & (value<<1);
+    //Increase memory by one, then subtract memory from accumulator (with borrow)
+    let new_value = value.wrapping_add(1);
+    nes.ram.put(address, new_value);
+    sbc(nes, address, new_value);
+}
+
+fn unofficial_hlt(_nes : &mut System, _address : address, opcode_key: byte)
+{
+    //CPU halt
+    panic!("CPU was halted! Opcode {:#04X}!", opcode_key);
+}
+
+fn unofficial_lar(nes : &mut System, _address : address, value : byte)
+{
+    //AND memory with stack pointer, transfer result to accumulator, X register and stack pointer
+    let new_value = value & nes.cpu.stack.get_pointer();
     nes.cpu.A = new_value;
+    nes.cpu.X = new_value;
+    nes.cpu.stack.set_pointer(new_value);
     nes.cpu.flags.zero = new_value==0;
     nes.cpu.flags.negative = is_negative!(new_value);
+}
+
+fn unofficial_lax(nes : &mut System, _address : address, value : byte)
+{
+    //Load accumulator and X register with memory
+    nes.cpu.A = value;
+    nes.cpu.X = value;
+    nes.cpu.flags.zero = value==0;
+    nes.cpu.flags.negative = is_negative!(value);
+}
+
+fn unofficial_rla(nes : &mut System, address : address, value : byte)
+{
+    //Rotate one bit left in memory, then AND accumulator with memory
+    rol(nes, address, value);
+    let new_value = nes.ram.get(address);
+    let new_accumulator = nes.cpu.A & new_value;
+    nes.cpu.flags.zero = new_accumulator==0;
+    nes.cpu.flags.negative = is_negative!(new_accumulator);
+}
+
+fn unofficial_rra(nes : &mut System, address : address, value : byte)
+{
+    //Rotate one bit right in memory, then add memory to accumulator (with carry)
+    ror(nes, address, value);
+    let new_value = nes.ram.get(address);
+    adc(nes, 0, new_value);
+}
+
+fn unofficial_sbc(nes : &mut System, address : address, value : byte)
+{
+    //subtract with carry
+    sbc(nes, address, value);
+}
+
+fn unofficial_slo(nes : &mut System, address : address, value : byte)
+{
+    //shift left one bit in memory, then OR accumulator with memory
+    asl(nes, address, value);
+    let new_value = nes.ram.get(address);
+    let new_accumulator = nes.cpu.A | new_value;
+    nes.cpu.A = new_accumulator;
+    nes.cpu.flags.zero = new_accumulator==0;
+    nes.cpu.flags.negative = is_negative!(new_accumulator);
+}
+
+fn unofficial_sre(nes : &mut System, address : address, value : byte)
+{
+    //Shift right one bit in memory, then XOR accumulator with memory
+    lsr(nes, address, value);
+    let new_value = nes.ram.get(address);
+    let new_accumulator = nes.cpu.A ^ new_value;
+    nes.cpu.A = new_accumulator;
+    nes.cpu.flags.zero = new_accumulator==0;
+    nes.cpu.flags.negative = is_negative!(new_accumulator);
+}
+
+fn unofficial_sxa(nes : &mut System, address : address, _value : byte)
+{
+    //AND X register with the high byte of the target address of the argument + 1, store the result in memory
+    let new_value = (nes.cpu.X & ((address >> 8) as byte)).wrapping_add(1);
+    nes.ram.put(address, new_value);
+}
+
+fn unofficial_sya(nes : &mut System, address : address, _value : byte)
+{
+    //AND Y register with the high byte of the target address of the argument + 1, store the result in memory
+    let new_value = (nes.cpu.Y & ((address>>8) as byte)).wrapping_add(1);
+    nes.ram.put(address, new_value);
+}
+
+fn unofficial_xaa(nes : &mut System, _address : address, value : byte)
+{
+    //set A = (A | magic constant) & X & value
+    let new_accumulator = ((nes.cpu.A | 0xEE) & nes.cpu.X) & value;
+    nes.cpu.A = new_accumulator;
+}
+
+fn unofficial_xas(nes : &mut System, address : address, _value : byte)
+{
+    //AND X register with accumulator and store result in stack pointer, then
+    //AND stack pointer with the high byte of the target address of the argument + 1, store result in memory
+    let new_stack_pointer = nes.cpu.X & nes.cpu.A;
+    nes.cpu.stack.set_pointer(new_stack_pointer);
+    let new_value = (nes.cpu.stack.get_pointer() & ((address>>8) as byte)).wrapping_add(1);
+    nes.ram.put(address, new_value);
 }
