@@ -49,7 +49,7 @@ fn create_channels() -> (FrontendChannels, BackendChannels)
 
 pub fn run_snake_game() -> Result<()>
 {
-    let executable_bytes = *include_bytes!("snake.bin");
+    let executable_bytes = *include_bytes!("snake/snake.bin");
 
     let (frontend_channels, backend_channels) = create_channels();
 
@@ -94,7 +94,7 @@ pub fn run_snake_game() -> Result<()>
             canvas.present();
         }
 
-        let mut event_pump = sdl_context.event_pump().unwrap();
+        let mut event_pump = sdl_context.event_pump().map_err(|e|anyhow!(e))?;
         for event in event_pump.poll_iter()
         {
             match event
@@ -158,7 +158,7 @@ impl SnakeGameDebugger
 
 impl Debugger for SnakeGameDebugger
 {
-    fn before_cpu_opcode(&self, nes : &mut System)
+    fn before_cpu_opcode(&mut self, nes : &mut System)
     {
         nes.ram.put(RANDOM_NUMBER_GENERATOR_ADDRESS, random::<u8>());
 
@@ -168,7 +168,7 @@ impl Debugger for SnakeGameDebugger
         }
     }
 
-    fn after_cpu_opcode(&self, nes : &mut System)
+    fn after_cpu_opcode(&mut self, nes : &mut System)
     {
         if nes.cpu.program_counter >= ROM_IN_RAM_ADDRESS
         {

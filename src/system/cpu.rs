@@ -39,17 +39,17 @@ impl CPU
             {
                 negative: false,
                 overflow: false,
-                reserved: false,
-                _break: true,
+                reserved: true,
+                _break: false,
                 decimal: false,
-                interrupt: false,
+                interrupt: true,
                 zero: false,
                 carry: false,
             },
         };
     }
 
-    pub fn run(nes : &mut System, debugger : Box<dyn Debugger>)
+    pub fn run(nes : &mut System, mut debugger : Box<dyn Debugger>)
     {
         let opcodes = build_opcodes_slice();
 
@@ -61,13 +61,13 @@ impl CPU
             let opcode = &opcodes[opcode_key as usize];
             let (address, value) = CPU::next_argument_from_rom(nes, &opcode);
 
+            debug_log!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
+
             debugger.before_cpu_opcode(nes);
             (opcode.lambda)(nes, address, value);
             debugger.after_cpu_opcode(nes);
 
             nes.cpu.clock.notify_cpu_cycle_stopped(&opcode);
-
-            debug_log!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
         }
     }
 }

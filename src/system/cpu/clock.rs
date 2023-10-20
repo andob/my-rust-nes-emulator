@@ -44,7 +44,8 @@ impl CPUClock
     pub fn now() -> u64
     {
         //todo make it work on windows and mac os
-        return clock_gettime(ClockId::CLOCK_MONOTONIC).unwrap().num_nanoseconds() as u64;
+        let result = clock_gettime(ClockId::CLOCK_MONOTONIC);
+        return if let Ok(value) = result { value.num_nanoseconds() as u64 } else { 0 };
     }
 
     pub fn notify_page_boundary_crossed(&mut self)

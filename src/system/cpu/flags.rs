@@ -5,7 +5,7 @@ pub struct CPUFlags
 {
     pub negative : bool,
     pub overflow : bool,
-    pub reserved : bool,
+    pub reserved : bool, //todo how is this used?
     pub _break : bool, //todo how is this used?
     pub decimal : bool,
     pub interrupt : bool, //todo how is this used?
@@ -27,7 +27,7 @@ impl CPUFlags
              | ((self.carry     as byte) << 0);
     }
 
-    pub fn from_byte(value : byte) -> Self
+    pub fn from_byte(value : byte) -> CPUFlags
     {
         return CPUFlags
         {
@@ -40,6 +40,11 @@ impl CPUFlags
             zero:      (value & 0b00000010) >> 1 == 1,
             carry:     (value & 0b00000001) >> 0 == 1,
         };
+    }
+
+    pub fn clone_from_byte(&self, value : byte) -> CPUFlags
+    {
+        return CPUFlags::from_byte(value);
     }
 }
 

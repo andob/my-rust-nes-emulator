@@ -11,14 +11,14 @@ macro_rules! debug_log
 {
     ($($arg:tt)*) =>
     {{
-        // println!($($arg)*);
+        println!($($arg)*);
     }};
 }
 
 pub trait Debugger
 {
-    fn before_cpu_opcode(&self, nes : &mut System);
-    fn after_cpu_opcode(&self, nes : &mut System);
+    fn before_cpu_opcode(&mut self, nes : &mut System);
+    fn after_cpu_opcode(&mut self, nes : &mut System);
 }
 
 pub struct EmptyDebugger {}
@@ -30,7 +30,7 @@ impl EmptyDebugger
 
 impl Debugger for EmptyDebugger
 {
-    fn before_cpu_opcode(&self, _nes : &mut System) {}
+    fn before_cpu_opcode(&mut self, _nes : &mut System) {}
 
-    fn after_cpu_opcode(&self, _nes : &mut System) {}
+    fn after_cpu_opcode(&mut self, _nes : &mut System) {}
 }

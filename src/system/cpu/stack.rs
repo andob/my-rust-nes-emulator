@@ -1,6 +1,6 @@
 use crate::system::{address, byte, System};
 
-const STACK_TOP_ADDRESS : address = 0x01FF;
+const STACK_TOP_ADDRESS : address = 0x01FD;
 const STACK_BOTTOM_ADDRESS : address = 0x0100;
 
 pub struct CPUStack
