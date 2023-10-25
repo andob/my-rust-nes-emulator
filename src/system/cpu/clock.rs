@@ -2,7 +2,6 @@ use std::thread;
 use std::time::Duration;
 use nix::sys::time::TimeValLike;
 use nix::time::{clock_gettime, ClockId};
-use crate::debug_log;
 use crate::system::cpu::opcodes::Opcode;
 
 #[allow(non_camel_case_types)]
@@ -89,7 +88,7 @@ impl CPUClock
 
         if elapsed_nanoseconds >= target_nanoseconds
         {
-            debug_log!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
+            //todo log_verbose!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
         }
         else
         {

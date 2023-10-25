@@ -137,8 +137,8 @@ impl SnakeGameDebugger
 
     fn find_sprite_location(&self, nes : &mut System, sprite_address : address) -> Option<(usize, usize)>
     {
-        let low = nes.ram.get(sprite_address);
-        let high = nes.ram.get(sprite_address+1);
+        let low = nes.cpu_bus.get(sprite_address);
+        let high = nes.cpu_bus.get(sprite_address+1);
         let address = ((high as address)<<8) | (low as address);
         return self.find_screen_location_by_address(address);
     }
@@ -160,11 +160,11 @@ impl Debugger for SnakeGameDebugger
 {
     fn before_cpu_opcode(&mut self, nes : &mut System)
     {
-        nes.ram.put(RANDOM_NUMBER_GENERATOR_ADDRESS, random::<u8>());
+        nes.cpu_bus.put(RANDOM_NUMBER_GENERATOR_ADDRESS, random::<u8>());
 
         if let Ok(keycode) = self.backend_channels.pressed_key_receiver.try_recv()
         {
-            nes.ram.put(LAST_PRESSED_BUTTON_ADDRESS, self.encode_keycode(keycode));
+            nes.cpu_bus.put(LAST_PRESSED_BUTTON_ADDRESS, self.encode_keycode(keycode));
         }
     }
 
@@ -177,7 +177,7 @@ impl Debugger for SnakeGameDebugger
 
         let mut screen = [[false; SCREEN_WIDTH]; SCREEN_HEIGHT];
 
-        let snake_length = nes.ram.get(SPRITE_SNAKE_LENGTH_LOCATION) as address;
+        let snake_length = nes.cpu_bus.get(SPRITE_SNAKE_LENGTH_LOCATION) as address;
         for i in 0..snake_length
         {
             if let Some((x, y)) = self.find_sprite_location(nes, SPRITE_SNAKE_PART_START_LOCATION+2*i)

@@ -1,4 +1,4 @@
-use crate::debug_log;
+use crate::log_verbose;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
@@ -61,7 +61,7 @@ impl CPU
             let opcode = &opcodes[opcode_key as usize];
             let (address, value) = CPU::next_argument_from_rom(nes, &opcode);
 
-            debug_log!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
+            log_verbose!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
 
             debugger.before_cpu_opcode(nes);
             (opcode.lambda)(nes, address, value);

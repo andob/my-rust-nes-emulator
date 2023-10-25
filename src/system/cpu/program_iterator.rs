@@ -40,7 +40,7 @@ impl CPU
             AddressingMode::Absolute =>
             {
                 let address = CPU::next_address_from_rom(nes);
-                let value = nes.ram.get(address);
+                let value = nes.cpu_bus.get(address);
                 return (address, value);
             }
 
@@ -53,7 +53,7 @@ impl CPU
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.ram.get(address);
+                let value = nes.cpu_bus.get(address);
                 return (address, value);
             }
 
@@ -66,14 +66,14 @@ impl CPU
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.ram.get(address);
+                let value = nes.cpu_bus.get(address);
                 return (address, value);
             }
 
             AddressingMode::ZeroPage =>
             {
                 let address = CPU::next_byte_from_rom(nes);
-                let value = nes.ram.get(address as address);
+                let value = nes.cpu_bus.get(address as address);
                 return (address as address, value);
             }
 
@@ -81,7 +81,7 @@ impl CPU
             {
                 let base_address = CPU::next_byte_from_rom(nes);
                 let address = base_address.wrapping_add(nes.cpu.X);
-                let value = nes.ram.get(address as address);
+                let value = nes.cpu_bus.get(address as address);
                 return (address as address, value);
             }
 
@@ -89,14 +89,14 @@ impl CPU
             {
                 let base_address = CPU::next_byte_from_rom(nes);
                 let address = base_address.wrapping_add(nes.cpu.Y);
-                let value = nes.ram.get(address as address);
+                let value = nes.cpu_bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::Indirect =>
             {
                 let address = CPU::next_address_from_rom(nes);
-                let value = nes.ram.get(address);
+                let value = nes.cpu_bus.get(address);
                 return (address, value);
             }
 
@@ -104,15 +104,15 @@ impl CPU
             {
                 let base_address = CPU::next_byte_from_rom(nes);
                 let pointer = base_address.wrapping_add(nes.cpu.X as byte);
-                let low = nes.ram.get(pointer as address);
-                let high = nes.ram.get((pointer as address).wrapping_add(1));
+                let low = nes.cpu_bus.get(pointer as address);
+                let high = nes.cpu_bus.get(pointer.wrapping_add(1) as address);
                 let address = ((high as address)<<8) | (low as address);
                 if (base_address as address)/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.ram.get(address as address);
+                let value = nes.cpu_bus.get(address as address);
                 return (address as address, value);
             }
 
@@ -120,15 +120,15 @@ impl CPU
             {
                 let base_address = CPU::next_byte_from_rom(nes);
                 let pointer = base_address.wrapping_add(nes.cpu.Y as byte);
-                let low = nes.ram.get(pointer as address);
-                let high = nes.ram.get(pointer as address);
+                let low = nes.cpu_bus.get(pointer as address);
+                let high = nes.cpu_bus.get(pointer.wrapping_add(1) as address);
                 let address = ((high as address)<<8) | (low as address);
                 if (base_address as address)/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.ram.get(address as address);
+                let value = nes.cpu_bus.get(address as address);
                 return (address as address, value);
             }
 
@@ -147,15 +147,15 @@ impl CPU
 
     pub fn next_byte_from_rom(nes : &mut System) -> byte
     {
-        let value = nes.rom.get(nes.cpu.program_counter);
+        let value = nes.cpu_bus.program_rom.get(nes.cpu.program_counter);
         nes.cpu.program_counter += 1;
         return value;
     }
 
     pub fn next_address_from_rom(nes : &mut System) -> address
     {
-        let low = nes.rom.get(nes.cpu.program_counter);
-        let high = nes.rom.get(nes.cpu.program_counter+1);
+        let low = nes.cpu_bus.program_rom.get(nes.cpu.program_counter);
+        let high = nes.cpu_bus.program_rom.get(nes.cpu.program_counter+1);
         let value = ((high as address) << 8) | (low as address);
         nes.cpu.program_counter += 2;
         return value;

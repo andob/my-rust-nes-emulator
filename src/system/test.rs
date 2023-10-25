@@ -1,5 +1,6 @@
 use anyhow::Result;
 use maplit2::hashmap;
+use crate::log_warning;
 use crate::system::test::snake::run_snake_game;
 use crate::system::test::cpu_kevtris_nestest::test_cpu_with_kevtris_nestest;
 
@@ -23,7 +24,7 @@ impl Test
             return test();
         }
 
-        println!("Available tests:\n{}", tests.iter()
+        log_warning!("Available tests:\n{}", tests.iter()
             .map(|(test_name,_)| format!("{}\n", test_name))
             .collect::<String>());
         return Ok(());

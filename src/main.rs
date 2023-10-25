@@ -5,6 +5,7 @@ mod system;
 
 fn main()
 {
+    //todo http://6502.org/tutorials/interrupts.html
     let args = env::args().collect::<Vec<String>>();
     if args.len()>=3 && args[1]=="test"
     {
@@ -18,6 +19,6 @@ fn main()
     }
     else
     {
-        println!("Syntax: <emulator> <rom_file.nes>");
+        log_warning!("Syntax: <emulator> <rom_file.nes>");
     }
 }

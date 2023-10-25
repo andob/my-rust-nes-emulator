@@ -1,7 +1,8 @@
 use crate::system::cpu::CPU;
+use crate::system::cpu_bus::CPUBus;
 use crate::system::debugger::{Debugger, EmptyDebugger};
 use crate::system::ram::RAM;
-use crate::system::rom::ROM;
+use crate::system::rom::ROMParser;
 use crate::system::test::Test;
 
 mod cpu;
@@ -9,6 +10,7 @@ mod ram;
 mod rom;
 mod debugger;
 mod test;
+mod cpu_bus;
 
 #[allow(non_camel_case_types)]
 pub type byte = u8;
@@ -19,19 +21,23 @@ pub type address = u16;
 pub struct System
 {
     cpu : CPU,
-    ram : RAM,
-    rom : ROM,
+    cpu_bus : CPUBus,
 }
 
 impl System
 {
     pub fn new(rom_data : Box<[byte]>) -> System
     {
+        let (program_rom, _character_rom) = ROMParser::parse(rom_data);
+
         return System
         {
             cpu: CPU::new(),
-            ram: RAM::new(),
-            rom: ROM::new(rom_data),
+            cpu_bus: CPUBus
+            {
+                ram: RAM::new(),
+                program_rom: Box::new(program_rom),
+            }
         };
     }
 

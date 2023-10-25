@@ -17,7 +17,7 @@ impl CPUStack
 
     pub fn push(nes : &mut System, value : byte)
     {
-        nes.ram.put(nes.cpu.stack.pointer, value);
+        nes.cpu_bus.put(nes.cpu.stack.pointer, value);
 
         let new_stack_pointer = nes.cpu.stack.pointer-1;
         if new_stack_pointer >= STACK_BOTTOM_ADDRESS && new_stack_pointer <= STACK_TOP_ADDRESS
@@ -31,7 +31,7 @@ impl CPUStack
         let new_stack_pointer = nes.cpu.stack.pointer+1;
         if new_stack_pointer >= STACK_BOTTOM_ADDRESS && new_stack_pointer <= STACK_TOP_ADDRESS
         {
-            let value = nes.ram.get(new_stack_pointer);
+            let value = nes.cpu_bus.get(new_stack_pointer);
             nes.cpu.stack.pointer = new_stack_pointer;
             return Some(value);
         }

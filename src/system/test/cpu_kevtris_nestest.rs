@@ -1,21 +1,21 @@
 use anyhow::Result;
 use substring::Substring;
 use std::collections::VecDeque;
+use crate::log_warning;
 use crate::system::debugger::Debugger;
 use crate::system::{address, byte, System};
 
 pub fn test_cpu_with_kevtris_nestest() -> Result<()>
 {
     let rom_bytes = *include_bytes!("cpu_kevtris_nestest/nestest.nes");
+
     let failure_codes_string = include_str!("cpu_kevtris_nestest/failure_codes.txt").to_string();
+    let failure_codes = parse_failure_codes(failure_codes_string)?;
+
     let good_output_string = include_str!("cpu_kevtris_nestest/good_output.log").to_string();
+    let good_output = parse_good_output(good_output_string)?;
 
-    let debugger = KevtrisNestestDebugger
-    {
-        failure_codes: parse_failure_codes(failure_codes_string)?,
-        good_output: parse_good_output(good_output_string)?,
-    };
-
+    let debugger = KevtrisNestestDebugger::new(failure_codes, good_output);
     let mut nes = System::new(Box::new(rom_bytes));
     nes.run_with_debugger(Box::new(debugger));
 
@@ -81,54 +81,74 @@ struct KevtrisNestestDebugger
 {
     failure_codes : Box<[String]>,
     good_output : VecDeque<GoodOutputLine>,
+    current_progress : usize,
+    max_progress : usize,
+}
+
+impl KevtrisNestestDebugger
+{
+    fn new(failure_codes : Box<[String]>, good_output : VecDeque<GoodOutputLine>) -> KevtrisNestestDebugger
+    {
+        let max_progress = good_output.len();
+        return KevtrisNestestDebugger { failure_codes, good_output, current_progress:0, max_progress };
+    }
 }
 
 impl Debugger for KevtrisNestestDebugger
 {
-    fn before_cpu_opcode(&mut self, _nes : &mut System) {}
+    fn before_cpu_opcode(&mut self, _nes : &mut System)
+    {
+        let percent = 1f32-((self.good_output.len() as f32)/(self.max_progress as f32));
+        let previous_progress = self.current_progress;
+        self.current_progress = (100f32*percent) as usize;
+        if previous_progress != self.current_progress
+        {
+            log_warning!("\n\n\n[CPU] PERCENT OF PASSED: {}%", self.current_progress);
+        }
+    }
 
     fn after_cpu_opcode(&mut self, nes : &mut System)
     {
-        let error_code = nes.ram.get(0x02 as address);
-        if error_code>0 { panic!("FAIL! {}", self.failure_codes[error_code as usize]); }
+        let error_code = nes.cpu_bus.get(0x02 as address);
+        if error_code>0 { panic!("[CPU] FAIL! {}", self.failure_codes[error_code as usize]); }
 
         if let Some(good_line) = self.good_output.pop_front()
         {
             if nes.cpu.A != good_line.A
             {
-                panic!("Test Failed! Wrong Accumulator!\nexpected={:#04X}, actual={:#04X}\n{}",
+                panic!("[CPU] Test Failed! Wrong Accumulator!\nexpected={:#04X}, actual={:#04X}\n{}",
                    good_line.A, nes.cpu.A, good_line.raw);
             }
 
             if nes.cpu.X != good_line.X
             {
-                panic!("Test Failed! Wrong X Index!\nexpected={:#04X}, actual={:#04X}\n{}",
+                panic!("[CPU] Test Failed! Wrong X Index!\nexpected={:#04X}, actual={:#04X}\n{}",
                    good_line.X, nes.cpu.X, good_line.raw);
             }
 
             if nes.cpu.Y != good_line.Y
             {
-                panic!("Test Failed! Wrong Y Index!\nexpected={:#04X}, actual={:#04X}\n{}",
+                panic!("[CPU] Test Failed! Wrong Y Index!\nexpected={:#04X}, actual={:#04X}\n{}",
                    good_line.Y, nes.cpu.Y, good_line.raw);
             }
 
             if nes.cpu.stack.get_pointer() != good_line.stack_pointer
             {
-                panic!("Test Failed! Wrong Stack Pointer!\nexpected={:#04X}, actual={:#04X}\n{}",
+                panic!("[CPU] Test Failed! Wrong Stack Pointer!\nexpected={:#04X}, actual={:#04X}\n{}",
                    good_line.stack_pointer, nes.cpu.stack.get_pointer(), good_line.raw);
             }
 
             if nes.cpu.program_counter != good_line.program_counter
             {
-                panic!("Test Failed! Wrong Program Counter!\nexpected={:#06X}, actual={:#06X}\n{}",
+                panic!("[CPU] Test Failed! Wrong Program Counter!\nexpected={:#06X}, actual={:#06X}\n{}",
                    good_line.program_counter, nes.cpu.program_counter, good_line.raw);
             }
 
             let expected_flags = nes.cpu.flags.clone_from_byte(good_line.flags);
             if nes.cpu.flags != expected_flags
             {
-                panic!("Test Failed! Wrong CPU Flags!\nexpected={}, actual={}\n{}",
-                   expected_flags, nes.cpu.flags, good_line.raw);
+                panic!("[CPU] Test Failed! Wrong CPU Flags!\nexpected=[{:#04X}]{}, actual=[{:#04X}]{}\n{}",
+                   good_line.flags, expected_flags, nes.cpu.flags.to_byte(), nes.cpu.flags, good_line.raw);
             }
         }
     }

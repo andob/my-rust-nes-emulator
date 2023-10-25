@@ -7,11 +7,20 @@ macro_rules! codeloc
 }
 
 #[macro_export]
-macro_rules! debug_log
+macro_rules! log_verbose
 {
     ($($arg:tt)*) =>
     {{
         println!($($arg)*);
+    }};
+}
+
+#[macro_export]
+macro_rules! log_warning
+{
+    ($($arg:tt)*) =>
+    {{
+        eprintln!($($arg)*);
     }};
 }
 

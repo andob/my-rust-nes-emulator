@@ -5,7 +5,7 @@ pub struct CPUFlags
 {
     pub negative : bool,
     pub overflow : bool,
-    pub reserved : bool, //todo how is this used?
+    pub reserved : bool,
     pub _break : bool, //todo how is this used?
     pub decimal : bool,
     pub interrupt : bool, //todo how is this used?
@@ -61,7 +61,12 @@ impl PartialEq<CPUFlags> for CPUFlags
 {
     fn eq(&self, other : &CPUFlags) -> bool
     {
-        return self.to_byte()==other.to_byte();
+        return self.negative == other.negative &&
+            self.overflow == other.overflow &&
+            self._break == other._break &&
+            self.interrupt == other.interrupt &&
+            self.zero == other.zero &&
+            self.carry == other.carry;
     }
 }
 
@@ -71,7 +76,7 @@ impl Display for CPUFlags
 {
     fn fmt(&self, f : &mut Formatter<'_>) -> std::fmt::Result
     {
-        write!(f, "negative:{}\noverflow:{}\nbreak:{}\ndecimal:{}\ninterrupt:{}\nzero:{}\ncarry:{}",
-            self.negative, self.overflow, self._break, self.decimal, self.interrupt, self.zero, self.carry)
+        write!(f, "negative:{} overflow:{} break:{} interrupt:{} zero:{} carry:{}\n",
+            self.negative, self.overflow, self._break, self.interrupt, self.zero, self.carry)
     }
 }
