@@ -1,8 +1,10 @@
+use crate::address_from_high_low;
 use crate::system::cpu::CPU;
 use crate::system::{address, byte, System};
 use crate::system::cpu::opcodes::Opcode;
 use crate::system::ram::RAM_PAGE_SIZE;
 
+#[derive(Debug)]
 pub enum AddressingMode
 {
     Implied,
@@ -48,7 +50,7 @@ impl CPU
             {
                 let base_address = CPU::next_address_from_rom(nes);
                 let address = base_address.wrapping_add(nes.cpu.X as address);
-                if base_address/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
@@ -61,7 +63,7 @@ impl CPU
             {
                 let base_address = CPU::next_address_from_rom(nes);
                 let address = base_address.wrapping_add(nes.cpu.Y as address);
-                if base_address/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
@@ -95,19 +97,24 @@ impl CPU
 
             AddressingMode::Indirect =>
             {
-                let address = CPU::next_address_from_rom(nes);
-                let value = nes.cpu_bus.get(address);
+                let low_address = CPU::next_address_from_rom(nes);
+                let high_address = if low_address & 0x00FF == 0x00FF { low_address & 0xFF00 }
+                else { low_address.wrapping_add(1) } as address;
+                let low = nes.cpu_bus.get(low_address);
+                let high = nes.cpu_bus.get(high_address);
+                let address = address_from_high_low!(high, low);
+                let value = nes.cpu_bus.get(address as address);
                 return (address, value);
             }
 
             AddressingMode::IndirectX =>
             {
-                let base_address = CPU::next_byte_from_rom(nes);
-                let pointer = base_address.wrapping_add(nes.cpu.X as byte);
-                let low = nes.cpu_bus.get(pointer as address);
-                let high = nes.cpu_bus.get(pointer.wrapping_add(1) as address);
-                let address = ((high as address)<<8) | (low as address);
-                if (base_address as address)/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                let base_base_address = CPU::next_byte_from_rom(nes);
+                let base_address = base_base_address.wrapping_add(nes.cpu.X as byte);
+                let low = nes.cpu_bus.get(base_address as address);
+                let high = nes.cpu_bus.get(base_address.wrapping_add(1) as address);
+                let address = address_from_high_low!(high, low);
+                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
@@ -118,12 +125,12 @@ impl CPU
 
             AddressingMode::IndirectY =>
             {
-                let base_address = CPU::next_byte_from_rom(nes);
-                let pointer = base_address.wrapping_add(nes.cpu.Y as byte);
-                let low = nes.cpu_bus.get(pointer as address);
-                let high = nes.cpu_bus.get(pointer.wrapping_add(1) as address);
-                let address = ((high as address)<<8) | (low as address);
-                if (base_address as address)/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                let base_base_address = CPU::next_byte_from_rom(nes);
+                let low = nes.cpu_bus.get(base_base_address as address);
+                let high = nes.cpu_bus.get(base_base_address.wrapping_add(1) as address);
+                let base_address = address_from_high_low!(high, low);
+                let address = base_address.wrapping_add(nes.cpu.Y as address);
+                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     nes.cpu.clock.notify_page_boundary_crossed();
                 }
@@ -156,8 +163,8 @@ impl CPU
     {
         let low = nes.cpu_bus.program_rom.get(nes.cpu.program_counter);
         let high = nes.cpu_bus.program_rom.get(nes.cpu.program_counter+1);
-        let value = ((high as address) << 8) | (low as address);
+        let address = address_from_high_low!(high, low);
         nes.cpu.program_counter += 2;
-        return value;
+        return address;
     }
 }

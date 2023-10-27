@@ -1,3 +1,4 @@
+use crate::address_from_high_low;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::program_iterator::AddressingMode;
 use crate::system::cpu::stack::CPUStack;
@@ -16,7 +17,7 @@ pub struct Opcode
 macro_rules! opcode
 {
     ($key : expr, $name : expr, $expected_duration : expr, $addressing_mode : expr) =>
-    {{
+    {
         Opcode
         {
             key: $key, lambda: $name,
@@ -24,7 +25,7 @@ macro_rules! opcode
             expected_duration: $expected_duration,
             addressing_mode: $addressing_mode,
         }
-    }}
+    }
 }
 
 pub fn build_opcodes_slice() -> Box<[Opcode]>
@@ -301,7 +302,7 @@ pub fn build_opcodes_slice() -> Box<[Opcode]>
     return opcodes.into_boxed_slice();
 }
 
-macro_rules! isneg { ($arg : expr) => {{ ($arg)>0x7F }} }
+macro_rules! isneg { ($arg : expr) => { ($arg)>0x7F } }
 
 fn adc(nes : &mut System, _address : address, value : byte)
 {
@@ -714,7 +715,7 @@ fn rti(nes : &mut System, _address : address, _value : byte)
     {
         if let Some(high) = CPUStack::pop(nes)
         {
-            let new_address = ((high as address)<<8) | (low as address);
+            let new_address = address_from_high_low!(high, low);
             nes.cpu.program_counter = new_address;
         }
     }
@@ -732,7 +733,7 @@ fn rts(nes : &mut System, _address : address, _value : byte)
     {
         if let Some(high) = CPUStack::pop(nes)
         {
-            let new_address = 1+(((high as address)<<8) | (low as address));
+            let new_address = 1+address_from_high_low!(high, low);
             nes.cpu.program_counter = new_address;
         }
     }
@@ -837,8 +838,6 @@ fn unofficial_aax(nes : &mut System, address : address, _value : byte)
     //AND X register with accumulator and store result in memory
     let new_value = nes.cpu.X & nes.cpu.A;
     nes.cpu_bus.put(address, new_value);
-    nes.cpu.flags.zero = new_value==0;
-    nes.cpu.flags.negative = isneg!(new_value);
 }
 
 fn unofficial_aar(nes : &mut System, _address : address, value : byte)
@@ -892,7 +891,11 @@ fn unofficial_dcp(nes : &mut System, address : address, value : byte)
     //Subtract 1 from memory (without borrow)
     let new_value = value.wrapping_sub(1);
     nes.cpu_bus.put(address, new_value);
-    nes.cpu.flags.carry = value<=new_value;
+
+    //some strange flags formulae on this unofficial opcode
+    // nes.cpu.flags.zero = value==0;
+    // nes.cpu.flags.negative = !isneg!(new_value);
+    // nes.cpu.flags.carry = if isneg!(new_value) { value<=new_value } else { true };
 }
 
 fn unofficial_nop(_nes : &mut System, _address : address, _value : byte)

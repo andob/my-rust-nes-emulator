@@ -21,8 +21,13 @@ impl ROM for ProgramROM
     {
         if self.mapper==0
         {
-            let address = (raw_address as usize) % self.bytes.len();
-            return self.bytes[address];
+            let raw_offset = raw_address as usize;
+            let rom_length = self.bytes.len();
+            let offset = if raw_offset>=0xF && raw_offset < rom_length
+                { (raw_offset+0x36AA)%rom_length } //todo check out what represents this magic value?
+            else { raw_offset%rom_length };
+
+            return self.bytes[offset];
         }
 
         return 0;

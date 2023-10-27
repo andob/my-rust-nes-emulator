@@ -18,6 +18,12 @@ pub type byte = u8;
 #[allow(non_camel_case_types)]
 pub type address = u16;
 
+#[macro_export]
+macro_rules! address_from_high_low
+{
+    ($high : expr, $low : expr) => ((($high as address)<<8)|($low as address))
+}
+
 pub struct System
 {
     cpu : CPU,

@@ -7,7 +7,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use crate::codeloc;
+use crate::{address_from_high_low, codeloc};
 use crate::system::debugger::Debugger;
 use crate::system::{address, byte, System};
 
@@ -139,7 +139,7 @@ impl SnakeGameDebugger
     {
         let low = nes.cpu_bus.get(sprite_address);
         let high = nes.cpu_bus.get(sprite_address+1);
-        let address = ((high as address)<<8) | (low as address);
+        let address = address_from_high_low!(high, low);
         return self.find_screen_location_by_address(address);
     }
 

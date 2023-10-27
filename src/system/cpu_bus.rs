@@ -43,6 +43,7 @@ impl CPUBus
 
     pub fn put(self : &mut CPUBus, raw_address : address, value : byte)
     {
+        //todo should also map on write, right?
         return self.ram.put(raw_address, value);
     }
 }
