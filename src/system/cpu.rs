@@ -1,15 +1,17 @@
-use crate::log_verbose;
+use crate::log_cpu_opcode;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, Debugger, System};
 use crate::system::cpu::clock::CPUClock;
+use crate::system::cpu::interrupts::CPUInterrupts;
 
 mod opcodes;
 mod program_iterator;
 mod stack;
 mod flags;
 mod clock;
+mod interrupts;
 
 #[allow(non_snake_case)]
 pub struct CPU
@@ -35,22 +37,14 @@ impl CPU
             stack: CPUStack::new(),
             clock: CPUClock::new(),
             program_counter: 0,
-            flags: CPUFlags
-            {
-                negative: false,
-                overflow: false,
-                reserved: true,
-                _break: false,
-                decimal: false,
-                interrupt: true,
-                zero: false,
-                carry: false,
-            },
+            flags: CPUFlags::from_byte(0),
         };
     }
 
     pub fn run(nes : &mut System, mut debugger : Box<dyn Debugger>)
     {
+        CPUInterrupts::reset(nes);
+
         let opcodes = build_opcodes_slice();
 
         loop
@@ -61,7 +55,8 @@ impl CPU
             let opcode = &opcodes[opcode_key as usize];
             let (address, value) = CPU::next_argument_from_rom(nes, &opcode);
 
-            log_verbose!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
+            //comment the following line to speed up CPU thread
+            log_cpu_opcode!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
 
             debugger.before_cpu_opcode(nes);
             (opcode.lambda)(nes, address, value);

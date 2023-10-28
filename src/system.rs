@@ -1,8 +1,9 @@
+use anyhow::Result;
 use crate::system::cpu::CPU;
 use crate::system::cpu_bus::CPUBus;
 use crate::system::debugger::{Debugger, EmptyDebugger};
 use crate::system::ram::RAM;
-use crate::system::rom::ROMParser;
+use crate::system::rom::{ROM, ROMParser};
 use crate::system::test::Test;
 
 mod cpu;
@@ -11,12 +12,16 @@ mod rom;
 mod debugger;
 mod test;
 mod cpu_bus;
+mod logger;
 
 #[allow(non_camel_case_types)]
 pub type byte = u8;
 
 #[allow(non_camel_case_types)]
 pub type address = u16;
+
+#[allow(non_camel_case_types)]
+pub type mapper = u8;
 
 #[macro_export]
 macro_rules! address_from_high_low
@@ -32,17 +37,21 @@ pub struct System
 
 impl System
 {
-    pub fn new(rom_data : Box<[byte]>) -> System
+    pub fn with_rom_bytes(rom_data : Box<[byte]>) -> Result<System>
     {
-        let (program_rom, _character_rom) = ROMParser::parse(rom_data);
+        let (program_rom, character_rom) = ROMParser::parse(rom_data)?;
+        return Ok(System::with_parsed_rom(Box::new(program_rom), Box::new(character_rom)));
+    }
 
+    pub fn with_parsed_rom(program_rom : Box<dyn ROM>, _character_rom : Box<dyn ROM>) -> System
+    {
         return System
         {
             cpu: CPU::new(),
             cpu_bus: CPUBus
             {
                 ram: RAM::new(),
-                program_rom: Box::new(program_rom),
+                program_rom: program_rom,
             }
         };
     }

@@ -88,7 +88,7 @@ impl CPUClock
 
         if elapsed_nanoseconds >= target_nanoseconds
         {
-            //todo log_verbose!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
+            //log_cpu_too_slow!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
         }
         else
         {

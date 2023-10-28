@@ -6,9 +6,9 @@ pub struct CPUFlags
     pub negative : bool,
     pub overflow : bool,
     pub reserved : bool,
-    pub _break : bool, //todo how is this used?
+    pub _break : bool,
     pub decimal : bool,
-    pub interrupt : bool, //todo how is this used?
+    pub interrupt : bool,
     pub zero : bool,
     pub carry : bool,
 }

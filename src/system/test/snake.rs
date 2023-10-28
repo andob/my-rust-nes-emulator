@@ -1,5 +1,5 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use anyhow::{anyhow, Context, Result};
 use itertools::iproduct;
 use rand::random;
@@ -10,6 +10,7 @@ use sdl2::rect::Rect;
 use crate::{address_from_high_low, codeloc};
 use crate::system::debugger::Debugger;
 use crate::system::{address, byte, System};
+use crate::system::rom::ROM;
 
 const SCREEN_WIDTH : usize = 32;
 const SCREEN_HEIGHT : usize = 32;
@@ -49,10 +50,15 @@ fn create_channels() -> (FrontendChannels, BackendChannels)
 
 pub fn run_snake_game() -> Result<()>
 {
-    let executable_bytes = *include_bytes!("snake/snake.bin");
-
     let (frontend_channels, backend_channels) = create_channels();
 
+    thread::spawn(move || { run_snake_game_backend(backend_channels); });
+
+    return run_snake_game_frontend(frontend_channels);
+}
+
+fn run_snake_game_frontend(frontend_channels : FrontendChannels) -> Result<()>
+{
     let (driver_index, _driver) = sdl2::render::drivers().enumerate()
         .find(|(_index, driver)| driver.name=="opengl")
         .ok_or(anyhow!("OpenGL driver not found!")).context(codeloc!())?;
@@ -63,13 +69,6 @@ pub fn run_snake_game() -> Result<()>
     let window = video_subsystem.window("Snake", (SCREEN_WIDTH*BLOCK_WIDTH) as u32,
         (SCREEN_HEIGHT*BLOCK_HEIGHT) as u32).position_centered().opengl().build().context(codeloc!())?;
     let mut canvas = window.into_canvas().index(driver_index as u32).build().context(codeloc!())?;
-
-    thread::spawn(move ||
-    {
-        let debugger = SnakeGameDebugger::new(backend_channels);
-        let mut nes = System::new(Box::new(executable_bytes));
-        nes.run_with_debugger(Box::new(debugger));
-    });
 
     let mut last_keycode : Option<Keycode> = None;
     loop
@@ -88,13 +87,13 @@ pub fn run_snake_game() -> Result<()>
                     /*y*/ (y*BLOCK_HEIGHT) as i32,
                     /*width*/ BLOCK_WIDTH as u32,
                     /*height*/ BLOCK_HEIGHT as u32)
-                ).map_err(|msg|anyhow!(msg)).context(codeloc!())?;
+                ).map_err(|msg|anyhow!(msg.clone())).context(codeloc!())?;
             }
 
             canvas.present();
         }
 
-        let mut event_pump = sdl_context.event_pump().map_err(|e|anyhow!(e))?;
+        let mut event_pump = sdl_context.event_pump().map_err(|e|anyhow!(e.clone()))?;
         for event in event_pump.poll_iter()
         {
             match event
@@ -112,6 +111,29 @@ pub fn run_snake_game() -> Result<()>
         {
             if let Ok(_) = frontend_channels.pressed_key_sender.send(keycode) {}
         }
+    }
+}
+
+fn run_snake_game_backend(backend_channels : BackendChannels)
+{
+    let executable_bytes = Box::new(*include_bytes!("snake/snake.bin"));
+    let program_rom = Box::new(SnakeGameROM { bytes: executable_bytes });
+    let character_rom = Box::new(SnakeGameROM { bytes: Box::new([]) });
+
+    let debugger = Box::new(SnakeGameDebugger::new(backend_channels));
+    let mut nes = System::with_parsed_rom(program_rom, character_rom);
+    nes.run_with_debugger(debugger);
+}
+
+struct SnakeGameROM { bytes : Box<[byte]> }
+
+impl ROM for SnakeGameROM
+{
+    fn len(&self) -> usize { self.bytes.len() }
+
+    fn get(&self, raw_address : address) -> byte
+    {
+        return self.bytes[(raw_address as usize) % self.bytes.len()];
     }
 }
 

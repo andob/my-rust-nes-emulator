@@ -6,18 +6,6 @@ macro_rules! codeloc
     () => { format!("{}:{}", file!(), line!()) }
 }
 
-#[macro_export]
-macro_rules! log_verbose
-{
-    ($($arg:tt)*) => { println!($($arg)*) }
-}
-
-#[macro_export]
-macro_rules! log_warning
-{
-    ($($arg:tt)*) => { eprintln!($($arg)*) }
-}
-
 pub trait Debugger
 {
     fn before_cpu_opcode(&mut self, nes : &mut System);

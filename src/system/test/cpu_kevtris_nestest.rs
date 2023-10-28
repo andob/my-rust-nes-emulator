@@ -1,7 +1,8 @@
 use anyhow::Result;
 use substring::Substring;
 use std::collections::VecDeque;
-use crate::log_warning;
+use std::process;
+use crate::log_test_result;
 use crate::system::debugger::Debugger;
 use crate::system::{address, byte, System};
 
@@ -9,45 +10,14 @@ pub fn test_cpu_with_kevtris_nestest() -> Result<()>
 {
     let rom_bytes = *include_bytes!("cpu_kevtris_nestest/nestest.nes");
 
-    let failure_codes_string = include_str!("cpu_kevtris_nestest/failure_codes.txt").to_string();
-    let failure_codes = parse_failure_codes(failure_codes_string)?;
-
     let good_output_string = include_str!("cpu_kevtris_nestest/good_output.log").to_string();
     let good_output = parse_good_output(good_output_string)?;
 
-    let debugger = KevtrisNestestDebugger::new(failure_codes, good_output);
-    let mut nes = System::new(Box::new(rom_bytes));
+    let debugger = KevtrisNestestDebugger::new(good_output);
+    let mut nes = System::with_rom_bytes(Box::new(rom_bytes))?;
     nes.run_with_debugger(Box::new(debugger));
 
     return Ok(());
-}
-
-fn parse_failure_codes(raw : String) -> Result<Box<[String]>>
-{
-    let delimiter = "----------------------------------------";
-    let mut errors = vec![String::new(); u8::MAX as usize];
-    let mut line_is_category = false;
-    let mut category = String::new();
-    for line in raw.lines()
-    {
-        if line == delimiter
-        {
-            line_is_category = !line_is_category;
-        }
-        else if line_is_category
-        {
-            category = String::from(line);
-        }
-        else
-        {
-            let tokens = line.split("h - ").collect::<Vec<&str>>();
-            let error = format!("{} / {}", category, tokens[1]);
-            let error_code = u8::from_str_radix(tokens[0], 16)?;
-            errors[error_code as usize] = error;
-        }
-    }
-
-    return Ok(errors.into_boxed_slice());
 }
 
 #[allow(non_snake_case)]
@@ -79,7 +49,6 @@ fn parse_good_output(raw : String) -> Result<VecDeque<GoodOutputLine>>
 
 struct KevtrisNestestDebugger
 {
-    failure_codes : Box<[String]>,
     good_output : VecDeque<GoodOutputLine>,
     current_progress : usize,
     max_progress : usize,
@@ -87,10 +56,10 @@ struct KevtrisNestestDebugger
 
 impl KevtrisNestestDebugger
 {
-    fn new(failure_codes : Box<[String]>, good_output : VecDeque<GoodOutputLine>) -> KevtrisNestestDebugger
+    fn new(good_output : VecDeque<GoodOutputLine>) -> KevtrisNestestDebugger
     {
         let max_progress = good_output.len();
-        return KevtrisNestestDebugger { failure_codes, good_output, current_progress:0, max_progress };
+        return KevtrisNestestDebugger { good_output, current_progress:0, max_progress };
     }
 }
 
@@ -103,14 +72,17 @@ impl Debugger for KevtrisNestestDebugger
         self.current_progress = (100f32*percent) as usize;
         if previous_progress != self.current_progress
         {
-            log_warning!("\n\n\n[CPU] PERCENT OF PASSED: {}%", self.current_progress);
+            log_test_result!("\n\n\n[CPU] PERCENT OF PASSED: {}%", self.current_progress);
         }
     }
 
     fn after_cpu_opcode(&mut self, nes : &mut System)
     {
-        let error_code = nes.cpu_bus.get(0x02 as address);
-        if error_code>0 { panic!("[CPU] FAIL! {}", self.failure_codes[error_code as usize]); }
+        if self.good_output.is_empty()
+        {
+            log_test_result!("ALL TESTS PASSED!!!");
+            process::exit(exitcode::OK);
+        }
 
         if let Some(good_line) = self.good_output.pop_front()
         {

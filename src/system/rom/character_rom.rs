@@ -1,20 +1,15 @@
-use crate::system::{address, byte};
+use crate::system::{address, byte, mapper};
 use crate::system::rom::ROM;
 
 pub struct CharacterROM
 {
-    mapper : byte,
+    mapper : mapper,
     bytes : Box<[byte]>,
 }
 
 impl CharacterROM
 {
-    pub fn empty() -> CharacterROM
-    {
-        return CharacterROM { mapper:0, bytes: Box::new([]) }
-    }
-
-    pub fn new(mapper : byte, bytes : &[byte]) -> CharacterROM
+    pub fn new(mapper : mapper, bytes : &[byte]) -> CharacterROM
     {
         return CharacterROM { mapper:mapper, bytes: bytes.to_owned().into_boxed_slice() };
     }
@@ -22,9 +17,11 @@ impl CharacterROM
 
 impl ROM for CharacterROM
 {
+    fn len(&self) -> usize { self.bytes.len() }
+
     fn get(&self, raw_address : address) -> byte
     {
-        if self.mapper==0
+        if self.mapper == 0
         {
             let address = (raw_address as usize) % self.bytes.len();
             return self.bytes[address];

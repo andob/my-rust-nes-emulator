@@ -1,9 +1,9 @@
-use crate::address_from_high_low;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::program_iterator::AddressingMode;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, System};
 use crate::system::cpu::clock::ExpectedDuration;
+use crate::system::cpu::interrupts::CPUInterrupts;
 
 pub struct Opcode
 {
@@ -432,16 +432,10 @@ fn beq(nes : &mut System, _address : address, offset : byte)
     }
 }
 
-fn brk(nes : &mut System, address : address, _value : byte)
+fn brk(nes : &mut System, _address : address, _value : byte)
 {
     //break!
-    //todo implement interrupts
-    let flags_to_backup = nes.cpu.flags.to_byte();
-    CPUStack::push(nes, ((nes.cpu.program_counter>>8)&0xFF) as byte);
-    CPUStack::push(nes, (nes.cpu.program_counter&0xFF) as byte);
-    nes.cpu.program_counter = address;
-    nes.cpu.flags.interrupt = true;
-    CPUStack::push(nes, flags_to_backup);
+    CPUInterrupts::irq(nes);
 }
 
 fn cmp(nes : &mut System, _address : address, value : byte)
@@ -553,8 +547,7 @@ fn jsr(nes : &mut System, address : address, _value : byte)
 {
     //jump to subroutine
     nes.cpu.program_counter -= 1;
-    CPUStack::push(nes, ((nes.cpu.program_counter>>8)&0xFF) as byte);
-    CPUStack::push(nes, (nes.cpu.program_counter&0xFF) as byte);
+    CPUStack::push_address(nes, nes.cpu.program_counter);
     nes.cpu.program_counter = address;
 }
 
@@ -708,16 +701,13 @@ fn ror(nes : &mut System, address : address, value : byte)
 fn rti(nes : &mut System, _address : address, _value : byte)
 {
     //return from interrupt
-    //todo implement interrupts
-    let cpu_flags_to_restore = if nes.cpu.flags.interrupt { CPUStack::pop(nes) } else { None };
+    let cpu_flags_to_restore =
+        if nes.cpu.flags.interrupt { CPUStack::pop_byte(nes) }
+        else { None };
 
-    if let Some(low) = CPUStack::pop(nes)
+    if let Some(new_address) = CPUStack::pop_address(nes)
     {
-        if let Some(high) = CPUStack::pop(nes)
-        {
-            let new_address = address_from_high_low!(high, low);
-            nes.cpu.program_counter = new_address;
-        }
+        nes.cpu.program_counter = new_address;
     }
 
     if let Some(flags_byte) = cpu_flags_to_restore
@@ -729,13 +719,9 @@ fn rti(nes : &mut System, _address : address, _value : byte)
 fn rts(nes : &mut System, _address : address, _value : byte)
 {
     //return from subroutine
-    if let Some(low) = CPUStack::pop(nes)
+    if let Some(new_address) = CPUStack::pop_address(nes)
     {
-        if let Some(high) = CPUStack::pop(nes)
-        {
-            let new_address = 1+address_from_high_low!(high, low);
-            nes.cpu.program_counter = new_address;
-        }
+        nes.cpu.program_counter = new_address+1;
     }
 }
 
@@ -777,13 +763,13 @@ fn tsx(nes : &mut System, _address : address, _value : byte)
 fn pha(nes : &mut System, _address : address, _value : byte)
 {
     //push Accumulator on Stack
-    CPUStack::push(nes, nes.cpu.A);
+    CPUStack::push_byte(nes, nes.cpu.A);
 }
 
 fn pla(nes : &mut System, _address : address, _value : byte)
 {
     //pop Stack into Accumulator
-    if let Some(new_value) = CPUStack::pop(nes)
+    if let Some(new_value) = CPUStack::pop_byte(nes)
     {
         nes.cpu.A = new_value;
         nes.cpu.flags.zero = new_value==0;
@@ -796,14 +782,15 @@ fn php(nes : &mut System, _address : address, _value : byte)
     //push Processor Flags on Stack
     let mut flags = nes.cpu.flags.clone();
     flags._break = true;
+    flags.reserved = true;
     let byte = flags.to_byte();
-    CPUStack::push(nes, byte);
+    CPUStack::push_byte(nes, byte);
 }
 
 fn plp(nes : &mut System, _address : address, _value : byte)
 {
     //pull Stack into Processor Flags
-    if let Some(byte) = CPUStack::pop(nes)
+    if let Some(byte) = CPUStack::pop_byte(nes)
     {
         let mut flags = CPUFlags::from_byte(byte);
         flags._break = false;
@@ -893,9 +880,9 @@ fn unofficial_dcp(nes : &mut System, address : address, value : byte)
     nes.cpu_bus.put(address, new_value);
 
     //some strange flags formulae on this unofficial opcode
-    // nes.cpu.flags.zero = value==0;
-    // nes.cpu.flags.negative = !isneg!(new_value);
-    // nes.cpu.flags.carry = if isneg!(new_value) { value<=new_value } else { true };
+    nes.cpu.flags.zero = value==0;
+    nes.cpu.flags.negative = !isneg!(new_value);
+    nes.cpu.flags.carry = if isneg!(new_value) { value<=new_value } else { true };
 }
 
 fn unofficial_nop(_nes : &mut System, _address : address, _value : byte)
@@ -943,6 +930,7 @@ fn unofficial_rla(nes : &mut System, address : address, value : byte)
     rol(nes, address, value);
     let new_value = nes.cpu_bus.get(address);
     let new_accumulator = nes.cpu.A & new_value;
+    nes.cpu.A = new_accumulator;
     nes.cpu.flags.zero = new_accumulator==0;
     nes.cpu.flags.negative = isneg!(new_accumulator);
 }
@@ -986,7 +974,7 @@ fn unofficial_sre(nes : &mut System, address : address, value : byte)
 fn unofficial_sxa(nes : &mut System, address : address, _value : byte)
 {
     //AND X register with the high byte of the target address of the argument + 1, store the result in memory
-    let new_value = (nes.cpu.X & ((address >> 8) as byte)).wrapping_add(1);
+    let new_value = (nes.cpu.X & ((address>>8) as byte)).wrapping_add(1);
     nes.cpu_bus.put(address, new_value);
 }
 
