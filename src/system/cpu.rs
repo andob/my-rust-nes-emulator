@@ -1,17 +1,24 @@
-use crate::log_cpu_opcode;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
-use crate::system::{address, byte, Debugger, System};
+use crate::system::{address, byte, CPUDebugger};
 use crate::system::cpu::clock::CPUClock;
+use crate::system::cpu::bus::CPUBus;
 use crate::system::cpu::interrupts::CPUInterrupts;
+use crate::system::cpu::program_iterator::CPUProgramIterator;
+use crate::system::cpu::program_rom::ProgramROM;
+use crate::system::debugger::LoggingOptions;
 
 mod opcodes;
 mod program_iterator;
 mod stack;
-mod flags;
+pub mod flags;
 mod clock;
 mod interrupts;
+pub mod bus;
+pub mod program_rom;
 
 #[allow(non_snake_case)]
 pub struct CPU
@@ -23,11 +30,19 @@ pub struct CPU
     pub clock : CPUClock,
     pub program_counter : address,
     pub flags : CPUFlags,
+    pub bus : CPUBus,
+}
+
+pub struct CPURunEnvironment
+{
+    pub debugger : CPUDebugger,
+    pub logging_options : LoggingOptions,
+    pub is_shutting_down : Arc<AtomicBool>,
 }
 
 impl CPU
 {
-    pub fn new() -> CPU
+    pub fn new(program_rom : ProgramROM) -> CPU
     {
         return CPU
         {
@@ -38,31 +53,37 @@ impl CPU
             clock: CPUClock::new(),
             program_counter: 0,
             flags: CPUFlags::from_byte(0),
+            bus: CPUBus::new(program_rom),
         };
     }
 
-    pub fn run(nes : &mut System, mut debugger : Box<dyn Debugger>)
+    pub fn run(self : &mut CPU, env : CPURunEnvironment)
     {
-        CPUInterrupts::reset(nes);
+        let cpu = self;
+        CPUInterrupts::reset(cpu);
 
         let opcodes = build_opcodes_slice();
 
         loop
         {
-            nes.cpu.clock.notify_cpu_cycle_started();
+            if env.is_shutting_down.load(Ordering::Relaxed) { return; }
 
-            let opcode_key = CPU::next_byte_from_rom(nes);
+            cpu.clock.notify_cpu_cycle_started();
+
+            let opcode_key = CPUProgramIterator::next_byte_from_rom(cpu);
             let opcode = &opcodes[opcode_key as usize];
-            let (address, value) = CPU::next_argument_from_rom(nes, &opcode);
+            let (address, value) = CPUProgramIterator::next_argument_from_rom(cpu, &opcode);
 
-            //comment the following line to speed up CPU thread
-            log_cpu_opcode!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
+            if env.logging_options.is_cpu_opcode_logging_enabled
+            {
+                println!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
+            }
 
-            debugger.before_cpu_opcode(nes);
-            (opcode.lambda)(nes, address, value);
-            debugger.after_cpu_opcode(nes);
+            (opcode.lambda)(cpu, address, value);
 
-            nes.cpu.clock.notify_cpu_cycle_stopped(&opcode);
+            env.debugger.notify_cpu_state_to_watchers(cpu);
+
+            cpu.clock.notify_cpu_cycle_stopped(&opcode, &env.logging_options);
         }
     }
 }

@@ -1,6 +1,5 @@
 use anyhow::Result;
 use maplit2::hashmap;
-use crate::log_syntax;
 use crate::system::test::snake::run_snake_game;
 use crate::system::test::cpu_kevtris_nestest::test_cpu_with_kevtris_nestest;
 
@@ -24,7 +23,7 @@ impl Test
             return test();
         }
 
-        log_syntax!("Available tests:\n{}", tests.iter()
+        println!("Available tests:\n{}", tests.iter()
             .map(|(test_name,_)| format!("{}\n", test_name))
             .collect::<String>());
         return Ok(());

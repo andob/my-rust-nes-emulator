@@ -3,6 +3,7 @@ use std::time::Duration;
 use nix::sys::time::TimeValLike;
 use nix::time::{clock_gettime, ClockId};
 use crate::system::cpu::opcodes::Opcode;
+use crate::system::debugger::LoggingOptions;
 
 #[allow(non_camel_case_types)]
 pub enum ExpectedDuration
@@ -64,7 +65,7 @@ impl CPUClock
         self.cycle_started_at = CPUClock::now();
     }
 
-    pub fn notify_cpu_cycle_stopped(&mut self, opcode : &Opcode)
+    pub fn notify_cpu_cycle_stopped(&mut self, opcode : &Opcode, logging_options : &LoggingOptions)
     {
         let expected_duration : u64 = match opcode.expected_duration
         {
@@ -88,7 +89,10 @@ impl CPUClock
 
         if elapsed_nanoseconds >= target_nanoseconds
         {
-            //log_cpu_too_slow!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
+            if logging_options.is_cpu_too_slow_warning_logging_enabled
+            {
+                println!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
+            }
         }
         else
         {

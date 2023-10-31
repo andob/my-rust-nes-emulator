@@ -1,16 +1,28 @@
-mod program_rom;
-mod character_rom;
-
 use std::cmp;
 use anyhow::{anyhow, Result};
-use crate::system::{address, byte, mapper};
-use crate::system::rom::character_rom::CharacterROM;
-use crate::system::rom::program_rom::ProgramROM;
+use crate::system::byte;
+use crate::system::cpu::program_rom::ProgramROM;
+use crate::system::ppu::character_rom::CharacterROM;
+use crate::system::rom::Mapper::{_0, _1, _2, _3, _4, _5};
 
-pub trait ROM
+#[derive(Eq, PartialEq, Clone, Copy)]
+pub enum Mapper
 {
-    fn len(&self) -> usize;
-    fn get(&self, raw_address : address) -> byte;
+    _0, _1, _2, _3, _4, _5,
+    SnakeTestGame,
+    Unknown
+}
+
+impl From<byte> for Mapper
+{
+    fn from(value : byte) -> Self
+    {
+        return match value
+        {
+            0=>_0, 1=>_1, 2=>_2, 3=>_3, 4=>_4, 5=>_5,
+            _ => Mapper::Unknown
+        };
+    }
 }
 
 pub struct ROMParser {}
@@ -22,7 +34,7 @@ impl ROMParser
         let header = &bytes[0x00..0x10];
         if header[0]==0x4E && header[1]==0x45 && header[2]==0x53 && header[3]==0x1A
         {
-            let mapper = header[6] as mapper;
+            let mapper = Mapper::from(header[6]);
 
             let offset_of_program_rom = header.len();
             let size_of_program_rom = (header[4] as usize)*16*1024;

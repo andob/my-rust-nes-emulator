@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::{env, fs, panic, process};
-use crate::system::System;
+use crate::system::{System, SystemStartArgs};
 
 mod system;
 
@@ -12,17 +12,17 @@ fn main() -> Result<()>
     if args.len()>=2 && args[1]=="test"
     {
         let test_name = args.get(2).cloned().unwrap_or_default();
-        System::test().run_test(test_name)?;
+        System::test().run_test(test_name).context(codeloc!())?;
     }
     else if args.len()>=2
     {
-        let rom_bytes = fs::read(args[1].clone())?.into_boxed_slice();
-        let mut nes = System::with_rom_bytes(rom_bytes)?;
-        nes.run();
+        let rom_bytes = fs::read(args[1].clone()).context(codeloc!())?.into_boxed_slice();
+        let start_args = SystemStartArgs::with_rom_bytes(rom_bytes).context(codeloc!())?;
+        System::start(start_args).join();
     }
     else
     {
-        log_syntax!("Syntax: <emulator> <rom_file.nes>");
+        println!("Syntax: <emulator> <rom_file.nes>");
     }
 
     return Ok(());

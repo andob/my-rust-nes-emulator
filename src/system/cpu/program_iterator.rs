@@ -1,6 +1,6 @@
 use crate::address_from_high_low;
 use crate::system::cpu::CPU;
-use crate::system::{address, byte, System};
+use crate::system::{address, byte};
 use crate::system::cpu::opcodes::Opcode;
 use crate::system::ram::RAM_PAGE_SIZE;
 
@@ -22,126 +22,127 @@ pub enum AddressingMode
     Unknown,
 }
 
-impl CPU
+pub struct CPUProgramIterator {}
+impl CPUProgramIterator
 {
-    pub fn next_argument_from_rom(nes : &mut System, opcode : &Opcode) -> (address, byte)
+    pub fn next_argument_from_rom(cpu : &mut CPU, opcode : &Opcode) -> (address, byte)
     {
         match opcode.addressing_mode
         {
             AddressingMode::Implied =>
             {
-                return (0, nes.cpu.A);
+                return (0, cpu.A);
             }
 
             AddressingMode::Immediate =>
             {
-                let value = CPU::next_byte_from_rom(nes);
+                let value = CPUProgramIterator::next_byte_from_rom(cpu);
                 return (0, value);
             }
 
             AddressingMode::Absolute =>
             {
-                let address = CPU::next_address_from_rom(nes);
-                let value = nes.cpu_bus.get(address);
+                let address = CPUProgramIterator::next_address_from_rom(cpu);
+                let value = cpu.bus.get(address);
                 return (address, value);
             }
 
             AddressingMode::AbsoluteXIndexed =>
             {
-                let base_address = CPU::next_address_from_rom(nes);
-                let address = base_address.wrapping_add(nes.cpu.X as address);
-                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                let base_address = CPUProgramIterator::next_address_from_rom(cpu);
+                let address = base_address.wrapping_add(cpu.X as address);
+                if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
-                    nes.cpu.clock.notify_page_boundary_crossed();
+                    cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.cpu_bus.get(address);
+                let value = cpu.bus.get(address);
                 return (address, value);
             }
 
             AddressingMode::AbsoluteYIndexed =>
             {
-                let base_address = CPU::next_address_from_rom(nes);
-                let address = base_address.wrapping_add(nes.cpu.Y as address);
-                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                let base_address = CPUProgramIterator::next_address_from_rom(cpu);
+                let address = base_address.wrapping_add(cpu.Y as address);
+                if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
-                    nes.cpu.clock.notify_page_boundary_crossed();
+                    cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.cpu_bus.get(address);
+                let value = cpu.bus.get(address);
                 return (address, value);
             }
 
             AddressingMode::ZeroPage =>
             {
-                let address = CPU::next_byte_from_rom(nes);
-                let value = nes.cpu_bus.get(address as address);
+                let address = CPUProgramIterator::next_byte_from_rom(cpu);
+                let value = cpu.bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::ZeroPageXIndexed =>
             {
-                let base_address = CPU::next_byte_from_rom(nes);
-                let address = base_address.wrapping_add(nes.cpu.X);
-                let value = nes.cpu_bus.get(address as address);
+                let base_address = CPUProgramIterator::next_byte_from_rom(cpu);
+                let address = base_address.wrapping_add(cpu.X);
+                let value = cpu.bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::ZeroPageYIndexed =>
             {
-                let base_address = CPU::next_byte_from_rom(nes);
-                let address = base_address.wrapping_add(nes.cpu.Y);
-                let value = nes.cpu_bus.get(address as address);
+                let base_address = CPUProgramIterator::next_byte_from_rom(cpu);
+                let address = base_address.wrapping_add(cpu.Y);
+                let value = cpu.bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::Indirect =>
             {
-                let low_address = CPU::next_address_from_rom(nes);
+                let low_address = CPUProgramIterator::next_address_from_rom(cpu);
                 let high_address = if low_address & 0x00FF == 0x00FF { low_address & 0xFF00 }
                 else { low_address.wrapping_add(1) } as address;
-                let low = nes.cpu_bus.get(low_address);
-                let high = nes.cpu_bus.get(high_address);
+                let low = cpu.bus.get(low_address);
+                let high = cpu.bus.get(high_address);
                 let address = address_from_high_low!(high, low);
-                let value = nes.cpu_bus.get(address as address);
+                let value = cpu.bus.get(address as address);
                 return (address, value);
             }
 
             AddressingMode::IndirectX =>
             {
-                let base_base_address = CPU::next_byte_from_rom(nes);
-                let base_address = base_base_address.wrapping_add(nes.cpu.X as byte);
-                let low = nes.cpu_bus.get(base_address as address);
-                let high = nes.cpu_bus.get(base_address.wrapping_add(1) as address);
+                let base_base_address = CPUProgramIterator::next_byte_from_rom(cpu);
+                let base_address = base_base_address.wrapping_add(cpu.X as byte);
+                let low = cpu.bus.get(base_address as address);
+                let high = cpu.bus.get(base_address.wrapping_add(1) as address);
                 let address = address_from_high_low!(high, low);
-                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
-                    nes.cpu.clock.notify_page_boundary_crossed();
+                    cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.cpu_bus.get(address as address);
+                let value = cpu.bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::IndirectY =>
             {
-                let base_base_address = CPU::next_byte_from_rom(nes);
-                let low = nes.cpu_bus.get(base_base_address as address);
-                let high = nes.cpu_bus.get(base_base_address.wrapping_add(1) as address);
+                let base_base_address = CPUProgramIterator::next_byte_from_rom(cpu);
+                let low = cpu.bus.get(base_base_address as address);
+                let high = cpu.bus.get(base_base_address.wrapping_add(1) as address);
                 let base_address = address_from_high_low!(high, low);
-                let address = base_address.wrapping_add(nes.cpu.Y as address);
-                if nes.cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
+                let address = base_address.wrapping_add(cpu.Y as address);
+                if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
-                    nes.cpu.clock.notify_page_boundary_crossed();
+                    cpu.clock.notify_page_boundary_crossed();
                 }
 
-                let value = nes.cpu_bus.get(address as address);
+                let value = cpu.bus.get(address as address);
                 return (address as address, value);
             }
 
             AddressingMode::Relative =>
             {
-                let offset = CPU::next_byte_from_rom(nes);
+                let offset = CPUProgramIterator::next_byte_from_rom(cpu);
                 return (0, offset);
             }
 
@@ -152,19 +153,19 @@ impl CPU
         };
     }
 
-    pub fn next_byte_from_rom(nes : &mut System) -> byte
+    pub fn next_byte_from_rom(cpu : &mut CPU) -> byte
     {
-        let value = nes.cpu_bus.program_rom.get(nes.cpu.program_counter);
-        nes.cpu.program_counter += 1;
+        let value = cpu.bus.program_rom.get(cpu.program_counter);
+        cpu.program_counter += 1;
         return value;
     }
 
-    pub fn next_address_from_rom(nes : &mut System) -> address
+    pub fn next_address_from_rom(cpu : &mut CPU) -> address
     {
-        let low = nes.cpu_bus.program_rom.get(nes.cpu.program_counter);
-        let high = nes.cpu_bus.program_rom.get(nes.cpu.program_counter+1);
+        let low = cpu.bus.program_rom.get(cpu.program_counter);
+        let high = cpu.bus.program_rom.get(cpu.program_counter+1);
         let address = address_from_high_low!(high, low);
-        nes.cpu.program_counter += 2;
+        cpu.program_counter += 2;
         return address;
     }
 }

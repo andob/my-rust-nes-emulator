@@ -41,11 +41,6 @@ impl CPUFlags
             carry:     (value & 0b00000001) >> 0 == 1,
         };
     }
-
-    pub fn clone_from_byte(&self, value : byte) -> CPUFlags
-    {
-        return CPUFlags::from_byte(value);
-    }
 }
 
 impl Clone for CPUFlags
