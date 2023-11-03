@@ -156,7 +156,7 @@ impl CPUProgramIterator
     pub fn next_byte_from_rom(cpu : &mut CPU) -> byte
     {
         let value = cpu.bus.program_rom.get(cpu.program_counter);
-        cpu.program_counter += 1;
+        cpu.program_counter = cpu.program_counter.wrapping_add(1);
         return value;
     }
 
@@ -165,7 +165,7 @@ impl CPUProgramIterator
         let low = cpu.bus.program_rom.get(cpu.program_counter);
         let high = cpu.bus.program_rom.get(cpu.program_counter+1);
         let address = address_from_high_low!(high, low);
-        cpu.program_counter += 2;
+        cpu.program_counter = cpu.program_counter.wrapping_add(2);
         return address;
     }
 }

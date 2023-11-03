@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
@@ -6,8 +8,9 @@ use anyhow::{Context, Result};
 use crate::codeloc;
 use crate::system::cpu::{CPU, CPURunEnvironment};
 use crate::system::cpu::program_rom::ProgramROM;
-use crate::system::debugger::{CPUDebugger, LoggingOptions};
+use crate::system::debugger::{CPUDebugger, LoggingOptions, PPUDebugger};
 use crate::system::ppu::character_rom::CharacterROM;
+use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::rom::ROMParser;
 use crate::system::test::Test;
 
@@ -18,11 +21,10 @@ mod debugger;
 mod test;
 mod rom;
 
-#[allow(non_camel_case_types)]
 pub type byte = u8;
-
-#[allow(non_camel_case_types)]
+pub type mapper = u8;
 pub type address = u16;
+pub type color = u32;
 
 #[macro_export]
 macro_rules! address_from_high_low
@@ -33,9 +35,10 @@ macro_rules! address_from_high_low
 pub struct SystemStartArgs
 {
     program_rom : ProgramROM,
-    _character_rom : CharacterROM,
+    character_rom : CharacterROM,
     logging_options : LoggingOptions,
     cpu_debugger : CPUDebugger,
+    ppu_debugger : PPUDebugger,
     headless : bool,
 }
 
@@ -52,9 +55,10 @@ impl SystemStartArgs
     {
         return SystemStartArgs
         {
-            program_rom: program_rom, _character_rom: character_rom,
+            program_rom: program_rom, character_rom: character_rom,
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
+            ppu_debugger: PPUDebugger::new(),
             headless: false,
         };
     }
@@ -65,7 +69,7 @@ impl System
 {
     pub fn test() -> Test { Test{} }
 
-    pub fn start(args : SystemStartArgs) -> RunningSystem
+    pub fn start(args : SystemStartArgs) -> Result<RunningSystem>
     {
         let is_shutting_down = Arc::new(AtomicBool::new(false));
 
@@ -76,19 +80,29 @@ impl System
             is_shutting_down: is_shutting_down.clone(),
         };
 
-        let join_handle = if args.headless
+        let ppu_run_environment = PPURunEnvironment
         {
-            thread::spawn(move || CPU::new(args.program_rom).run(cpu_run_environment))
-        }
-        else
-        {
-            thread::spawn(move ||
-            {
-                thread::spawn(move || CPU::new(args.program_rom).run(cpu_run_environment)).join().unwrap();
-            })
+            debugger: args.ppu_debugger,
+            logging_options: args.logging_options.clone(),
+            headless: args.headless,
+            is_shutting_down: is_shutting_down.clone(),
         };
 
-        return RunningSystem { join_handle, is_shutting_down };
+        let join_handle = thread::spawn(move ||
+        {
+            let join_sub_handles =
+            [
+                thread::spawn(move || CPU::new(args.program_rom).run(cpu_run_environment)),
+                thread::spawn(move || PPU::new(args.character_rom).run(ppu_run_environment).unwrap()),
+            ];
+
+            for join_sub_handle in join_sub_handles
+            {
+                join_sub_handle.join().unwrap();
+            }
+        });
+
+        return Ok(RunningSystem { join_handle, is_shutting_down });
     }
 }
 
@@ -105,7 +119,7 @@ impl RunningSystem
         self.is_shutting_down.store(true, Ordering::Relaxed);
     }
 
-    pub fn join(self)
+    pub fn await_termination(self)
     {
         return self.join_handle.join().unwrap();
     }

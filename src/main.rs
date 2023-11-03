@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use std::{env, fs, panic, process};
+use anyhow::{Context, Result};
 use crate::system::{System, SystemStartArgs};
 
 mod system;
@@ -12,13 +12,14 @@ fn main() -> Result<()>
     if args.len()>=2 && args[1]=="test"
     {
         let test_name = args.get(2).cloned().unwrap_or_default();
-        System::test().run_test(test_name).context(codeloc!())?;
+        System::test().run_test(test_name, args).context(codeloc!())?;
     }
     else if args.len()>=2
     {
-        let rom_bytes = fs::read(args[1].clone()).context(codeloc!())?.into_boxed_slice();
+        let rom_file_path = args.last().cloned().unwrap_or_default();
+        let rom_bytes = fs::read(rom_file_path).context(codeloc!())?.into_boxed_slice();
         let start_args = SystemStartArgs::with_rom_bytes(rom_bytes).context(codeloc!())?;
-        System::start(start_args).join();
+        System::start(start_args).context(codeloc!())?.await_termination();
     }
     else
     {
@@ -28,7 +29,7 @@ fn main() -> Result<()>
     return Ok(());
 }
 
-pub fn setup_panicking_from_all_threads()
+fn setup_panicking_from_all_threads()
 {
     let original_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info|

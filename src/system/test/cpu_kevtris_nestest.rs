@@ -7,26 +7,27 @@ use crate::system::{address, byte, System, SystemStartArgs};
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::debugger::CPUState;
 
-pub fn test_cpu_with_kevtris_nestest() -> Result<()>
+pub fn test_cpu_with_kevtris_nestest(_args : Vec<String>) -> Result<()>
 {
     let rom_bytes = *include_bytes!("cpu_kevtris_nestest/nestest.nes");
 
     let good_output_string = include_str!("cpu_kevtris_nestest/good_output.log").to_string();
-    let mut good_output = parse_good_output(good_output_string)?;
+    let mut good_output = parse_good_output(good_output_string).context(codeloc!())?;
 
     let (cpu_state_sender, cpu_state_receiver) = channel::<CPUState>();
 
     let mut start_args = SystemStartArgs::with_rom_bytes(Box::new(rom_bytes)).context(codeloc!())?;
     start_args.cpu_debugger.cpu_state_watcher = Some(cpu_state_sender);
     start_args.headless = true;
-    let running_system = System::start(start_args);
+
+    let running_system = System::start(start_args).context(codeloc!())?;
 
     let mut previous_progress = 0u32;
     let max_progress = good_output.len() as f32;
 
     loop
     {
-        let cpu_state = cpu_state_receiver.recv()?;
+        let cpu_state = cpu_state_receiver.recv().context(codeloc!())?;
 
         let current_progress = ((1f32-(good_output.len() as f32)/max_progress)*100f32) as u32;
         if current_progress != previous_progress
@@ -68,12 +69,12 @@ fn parse_good_output(raw : String) -> Result<VecDeque<GoodOutputLine>>
         raw: format!("{}\n{}", previous_line, next_line),
         cpu_state: CPUState
         {
-            A: byte::from_str_radix(&next_line[50..=51], 16)?,
-            X: byte::from_str_radix(&next_line[55..=56], 16)?,
-            Y: byte::from_str_radix(&next_line[60..=61], 16)?,
-            stack_pointer: byte::from_str_radix(&next_line[71..=72], 16)?,
-            program_counter: address::from_str_radix(&next_line[0..=3], 16)?,
-            flags: CPUFlags::from_byte(byte::from_str_radix(&next_line[65..=66], 16)?),
+            A: byte::from_str_radix(&next_line[50..=51], 16).context(codeloc!())?,
+            X: byte::from_str_radix(&next_line[55..=56], 16).context(codeloc!())?,
+            Y: byte::from_str_radix(&next_line[60..=61], 16).context(codeloc!())?,
+            stack_pointer: byte::from_str_radix(&next_line[71..=72], 16).context(codeloc!())?,
+            program_counter: address::from_str_radix(&next_line[0..=3], 16).context(codeloc!())?,
+            flags: CPUFlags::from_byte(byte::from_str_radix(&next_line[65..=66], 16).context(codeloc!())?),
         },
     })).collect();
 }

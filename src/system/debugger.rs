@@ -114,3 +114,19 @@ impl CPUDebugger
         }
     }
 }
+
+pub struct PPUDebugger
+{
+    pub should_render_pattern_tables_for_debugging : bool,
+}
+
+impl PPUDebugger
+{
+    pub fn new() -> PPUDebugger
+    {
+        return PPUDebugger
+        {
+            should_render_pattern_tables_for_debugging: false,
+        };
+    }
+}

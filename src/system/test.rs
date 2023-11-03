@@ -1,26 +1,26 @@
 use anyhow::Result;
 use maplit2::hashmap;
-use crate::system::test::snake::run_snake_game;
 use crate::system::test::cpu_kevtris_nestest::test_cpu_with_kevtris_nestest;
+use crate::system::test::ppu_show_pattern_table::test_ppu_show_pattern_table;
 
-mod snake;
 mod cpu_kevtris_nestest;
+mod ppu_show_pattern_table;
 
 pub struct Test {}
 
 impl Test
 {
-    pub fn run_test(&self, name : String) -> Result<()>
+    pub fn run_test(&self, test_name : String, test_args: Vec<String>) -> Result<()>
     {
         let tests = hashmap!
         {
-            "snake" => run_snake_game as fn() -> Result<()>,
-            "cpu_kevtris_nestest" => test_cpu_with_kevtris_nestest,
+            "cpu_kevtris_nestest" => test_cpu_with_kevtris_nestest as fn(Vec<String>) -> Result<()>,
+            "ppu_show_pattern_table" => test_ppu_show_pattern_table,
         };
 
-        if let Some(test) = tests.get(name.as_str())
+        if let Some(test) = tests.get(test_name.as_str())
         {
-            return test();
+            return test(test_args);
         }
 
         println!("Available tests:\n{}", tests.iter()
