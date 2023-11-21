@@ -6,6 +6,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use anyhow::{Context, Result};
 use crate::codeloc;
+use crate::system::channels::create_system_channels;
 use crate::system::cpu::{CPU, CPURunEnvironment};
 use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::debugger::{CPUDebugger, LoggingOptions, PPUDebugger};
@@ -20,6 +21,7 @@ mod ppu;
 mod debugger;
 mod test;
 mod rom;
+mod channels;
 
 pub type byte = u8;
 pub type mapper = u8;
@@ -90,10 +92,12 @@ impl System
 
         let join_handle = thread::spawn(move ||
         {
+            let channels = create_system_channels(args.logging_options.clone());
+
             let join_sub_handles =
             [
-                thread::spawn(move || CPU::new(args.program_rom).run(cpu_run_environment)),
-                thread::spawn(move || PPU::new(args.character_rom).run(ppu_run_environment).unwrap()),
+                thread::spawn(move || CPU::new(args.program_rom, channels.cpu_to_ppu_channels).run(cpu_run_environment)),
+                thread::spawn(move || PPU::new(args.character_rom, channels.ppu_to_cpu_channels).run(ppu_run_environment).unwrap()),
             ];
 
             for join_sub_handle in join_sub_handles

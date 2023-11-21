@@ -902,7 +902,7 @@ fn unofficial_isc(cpu : &mut CPU, address : address, value : byte)
 fn unofficial_hlt(_cpu : &mut CPU, _address : address, opcode_key: byte)
 {
     //CPU halt
-    panic!("CPU was halted! Opcode {:#04X}!", opcode_key);
+    //todo panic!("CPU was halted! Opcode {:#04X}!", opcode_key);
 }
 
 fn unofficial_lar(cpu : &mut CPU, _address : address, value : byte)

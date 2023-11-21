@@ -15,6 +15,7 @@ pub struct LoggingOptions
 {
     pub is_cpu_opcode_logging_enabled : bool,
     pub is_cpu_too_slow_warning_logging_enabled : bool,
+    pub is_channel_logging_enabled : bool,
 }
 
 impl LoggingOptions
@@ -23,8 +24,9 @@ impl LoggingOptions
     {
         return LoggingOptions
         {
-            is_cpu_opcode_logging_enabled: true,
+            is_cpu_opcode_logging_enabled: false,
             is_cpu_too_slow_warning_logging_enabled: false,
+            is_channel_logging_enabled: true,
         };
     }
 }
@@ -117,7 +119,7 @@ impl CPUDebugger
 
 pub struct PPUDebugger
 {
-    pub should_render_pattern_tables_for_debugging : bool,
+    pub should_render_pattern_tables_for_debugging : bool, //todo implement this
 }
 
 impl PPUDebugger

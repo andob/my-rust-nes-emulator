@@ -52,6 +52,7 @@ impl Clone for CPUFlags
     }
 }
 
+impl Eq for CPUFlags {}
 impl PartialEq<CPUFlags> for CPUFlags
 {
     fn eq(&self, other : &CPUFlags) -> bool
@@ -64,8 +65,6 @@ impl PartialEq<CPUFlags> for CPUFlags
             self.carry == other.carry;
     }
 }
-
-impl Eq for CPUFlags {}
 
 impl Display for CPUFlags
 {

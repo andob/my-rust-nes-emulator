@@ -4,6 +4,7 @@ use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, CPUDebugger};
+use crate::system::channels::CPUToPPUChannels;
 use crate::system::cpu::clock::CPUClock;
 use crate::system::cpu::bus::CPUBus;
 use crate::system::cpu::interrupts::CPUInterrupts;
@@ -42,7 +43,7 @@ pub struct CPURunEnvironment
 
 impl CPU
 {
-    pub fn new(program_rom : ProgramROM) -> CPU
+    pub fn new(program_rom : ProgramROM, channels : CPUToPPUChannels) -> CPU
     {
         return CPU
         {
@@ -53,7 +54,7 @@ impl CPU
             clock: CPUClock::new(),
             program_counter: 0,
             flags: CPUFlags::from_byte(0),
-            bus: CPUBus::new(program_rom),
+            bus: CPUBus::new(program_rom, channels),
         };
     }
 
