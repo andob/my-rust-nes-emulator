@@ -26,9 +26,8 @@ impl CPUInterrupts
         }
     }
 
-    pub fn _nmi(cpu : &mut CPU)
+    pub fn nmi(cpu : &mut CPU)
     {
-        //todo call this on PPU v-blank
         //NMI = non-maskable interrupt
         CPUInterrupts::interrupt(cpu, 0xFFFA);
     }

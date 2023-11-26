@@ -4,13 +4,14 @@ use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::{address, byte, CPUDebugger};
-use crate::system::channels::CPUToPPUChannels;
+use crate::system::apu_channels::CPUToAPUChannels;
 use crate::system::cpu::clock::CPUClock;
 use crate::system::cpu::bus::CPUBus;
 use crate::system::cpu::interrupts::CPUInterrupts;
 use crate::system::cpu::program_iterator::CPUProgramIterator;
 use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::debugger::LoggingOptions;
+use crate::system::ppu_channels::CPUToPPUChannels;
 
 mod opcodes;
 mod program_iterator;
@@ -41,9 +42,15 @@ pub struct CPURunEnvironment
     pub is_shutting_down : Arc<AtomicBool>,
 }
 
+pub struct CPUChannelsToOtherSystems
+{
+    pub ppu_channels : CPUToPPUChannels,
+    pub apu_channels : CPUToAPUChannels,
+}
+
 impl CPU
 {
-    pub fn new(program_rom : ProgramROM, channels : CPUToPPUChannels) -> CPU
+    pub fn new(program_rom : ProgramROM, channels : CPUChannelsToOtherSystems) -> CPU
     {
         return CPU
         {
@@ -85,6 +92,16 @@ impl CPU
             env.debugger.notify_cpu_state_to_watchers(cpu);
 
             cpu.clock.notify_cpu_cycle_stopped(&opcode, &env.logging_options);
+
+            if cpu.bus.channels.ppu_channels.is_ppu_signaling_that_vblank_has_started()
+            {
+               CPUInterrupts::nmi(cpu);
+            }
+
+            if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
+            {
+                CPUInterrupts::irq(cpu);
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::system::{address, byte};
-use crate::system::channels::CPUToPPUChannels;
+use crate::system::cpu::CPUChannelsToOtherSystems;
 use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::ram::RAM;
 
@@ -8,8 +8,8 @@ const RAM_END_ADDRESS : address = 0x1FFF;
 const PPU_REGISTERS_START_ADDRESS : address = 0x2000;
 const PPU_REGISTERS_END_ADDRESS : address = 0x3FFF;
 const PPU_OAM_DMA_ADDRESS : address = 0x4014;
-const IO_REGISTERS_START_ADDRESS : address = 0x4000;
-const IO_REGISTERS_END_ADDRESS : address = 0x4017;
+const APU_REGISTERS_START_ADDRESS : address = 0x4000;
+const APU_REGISTERS_END_ADDRESS : address = 0x4017;
 const PROGRAM_ROM_START_ADDRESS : address = 0x4020;
 const PROGRAM_ROM_END_ADDRESS : address = 0xFFFF;
 
@@ -17,18 +17,18 @@ pub struct CPUBus
 {
     pub ram : RAM,
     pub program_rom : ProgramROM,
-    pub ppu_channels : CPUToPPUChannels,
+    pub channels : CPUChannelsToOtherSystems,
 }
 
 impl CPUBus
 {
-    pub fn new(program_rom : ProgramROM, channels : CPUToPPUChannels) -> CPUBus
+    pub fn new(program_rom : ProgramROM, channels : CPUChannelsToOtherSystems) -> CPUBus
     {
         return CPUBus
         {
             ram: RAM::new(),
             program_rom: program_rom,
-            ppu_channels: channels,
+            channels: channels,
         };
     }
 
@@ -42,13 +42,12 @@ impl CPUBus
         if (raw_address >= PPU_REGISTERS_START_ADDRESS && raw_address <= PPU_REGISTERS_END_ADDRESS) || raw_address == PPU_OAM_DMA_ADDRESS
         {
             let channel_address = self.convert_raw_address_to_ppu_channel_address(raw_address);
-            return self.ppu_channels.read(channel_address);
+            return self.channels.ppu_channels.read(channel_address);
         }
 
-        if raw_address >= IO_REGISTERS_START_ADDRESS && raw_address <= IO_REGISTERS_END_ADDRESS
+        if raw_address >= APU_REGISTERS_START_ADDRESS && raw_address <= APU_REGISTERS_END_ADDRESS
         {
-            //todo NES APU and IO registers
-            return 0;
+            return self.channels.apu_channels.read(raw_address);
         }
 
         if raw_address >= PROGRAM_ROM_START_ADDRESS && raw_address < PROGRAM_ROM_END_ADDRESS
@@ -69,12 +68,12 @@ impl CPUBus
         if (raw_address >= PPU_REGISTERS_START_ADDRESS && raw_address <= PPU_REGISTERS_END_ADDRESS) || raw_address == PPU_OAM_DMA_ADDRESS
         {
             let channel_address = self.convert_raw_address_to_ppu_channel_address(raw_address);
-            self.ppu_channels.write(channel_address, value);
+            self.channels.ppu_channels.write(channel_address, value);
         }
 
-        if raw_address >= IO_REGISTERS_START_ADDRESS && raw_address <= IO_REGISTERS_END_ADDRESS
+        if raw_address >= APU_REGISTERS_START_ADDRESS && raw_address <= APU_REGISTERS_END_ADDRESS
         {
-            //todo NES APU and IO registers
+            return self.channels.apu_channels.write(raw_address, value);
         }
     }
 

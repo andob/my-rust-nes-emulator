@@ -2,13 +2,12 @@ use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use crate::codeloc;
 use crate::system::byte;
-use crate::system::channels::{CPUToPPUCommTarget, PPUToCPUChannels};
 use crate::system::debugger::{LoggingOptions, PPUDebugger};
 use crate::system::ppu::bus::PPUBus;
 use crate::system::ppu::character_rom::CharacterROM;
@@ -17,6 +16,7 @@ use crate::system::ppu::flags::mask_flags::PPUMaskFlags;
 use crate::system::ppu::flags::status_flags::PPUStatusFlags;
 use crate::system::ppu::oam::PPUOAM;
 use crate::system::ppu::pattern_table::PatternTable;
+use crate::system::ppu_channels::{CPUToPPUCommTarget, PPUToCPUChannels};
 
 pub mod character_rom;
 pub mod bus;
@@ -77,6 +77,9 @@ impl PPU
             .position_centered().opengl().build().context(codeloc!())?;
         if env.headless { window.hide(); }
         let mut canvas = window.into_canvas().index(opengl_driver_index).build().context(codeloc!())?;
+        let fps = 16666667u128; //60FPS
+        let mut clock_total_elapsed = 0u128;
+        let mut clock_tick = Instant::now();
 
         let texture_creator = canvas.texture_creator();
         let mut left_pattern_table = PatternTable::new(&texture_creator, PPUBus::get_left_pattern_table_address_range())?;
@@ -86,15 +89,27 @@ impl PPU
         {
             if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()); }
 
-            if ppu.bus.palette.was_recently_changed()
+            //todo implement a proper, more precise render clock + VBLANK algorithm
+            clock_total_elapsed += clock_tick.elapsed().as_nanos();
+            let should_render = clock_total_elapsed >= fps;
+            if should_render
             {
-                left_pattern_table.refresh_textures( &ppu.bus)?;
-                right_pattern_table.refresh_textures(&ppu.bus)?;
-            }
+                clock_tick = Instant::now();
 
-            canvas.set_draw_color(Color::BLACK);
-            canvas.clear();
-            canvas.present();
+                if !env.headless && ppu.bus.palette.was_recently_changed()
+                {
+                    left_pattern_table.refresh_textures(&ppu.bus)?;
+                    right_pattern_table.refresh_textures(&ppu.bus)?;
+                }
+
+                canvas.set_draw_color(Color::BLACK);
+                canvas.clear();
+                canvas.present();
+
+                ppu.cpu_channels.signal_vblank();
+
+                thread::sleep(Duration::from_nanos(fps as u64));
+            }
 
             if let Ok(target) = ppu.cpu_channels.get_read_command_from_cpu()
             {
@@ -126,8 +141,6 @@ impl PPU
                 Ok((CPUToPPUCommTarget::OAM_DMA, value)) => {} //todo implement this
                 _ => {}
             }
-
-            thread::sleep(Duration::from_secs(1));
 
             let mut event_pump = sdl.event_pump().map_err(|e|anyhow!(e.clone())).context(codeloc!())?;
             for event in event_pump.poll_iter()
