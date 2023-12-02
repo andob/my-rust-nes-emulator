@@ -69,16 +69,16 @@ impl CPUClock
     {
         let expected_duration : u64 = match opcode.expected_duration
         {
-            ExpectedDuration::_2  => { 2 }
-            ExpectedDuration::_3  => { 3 }
-            ExpectedDuration::_4  => { 4 }
-            ExpectedDuration::_4p => { 4+(self.was_page_boundary_crossed as u64) }
-            ExpectedDuration::_5  => { 5 }
-            ExpectedDuration::_5p => { 5+(self.was_page_boundary_crossed as u64) }
-            ExpectedDuration::_6  => { 6 }
-            ExpectedDuration::_7  => { 7 }
-            ExpectedDuration::_8  => { 8 }
-            ExpectedDuration::bra => { 1+(self.was_page_boundary_crossed as u64)+(self.was_branch_taken as u64) }
+            ExpectedDuration::_2  => 2,
+            ExpectedDuration::_3  => 3,
+            ExpectedDuration::_4  => 4,
+            ExpectedDuration::_4p => 4+(self.was_page_boundary_crossed as u64),
+            ExpectedDuration::_5  => 5,
+            ExpectedDuration::_5p => 5+(self.was_page_boundary_crossed as u64),
+            ExpectedDuration::_6  => 6,
+            ExpectedDuration::_7  => 7,
+            ExpectedDuration::_8  => 8,
+            ExpectedDuration::bra => 1+(self.was_page_boundary_crossed as u64)+(self.was_branch_taken as u64),
         };
 
         let one_second_in_ns = 1_000_000_000u64; //1second

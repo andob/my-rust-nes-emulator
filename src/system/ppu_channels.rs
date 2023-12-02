@@ -2,7 +2,7 @@ use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use crate::system::{address, byte, System};
 use crate::system::debugger::LoggingOptions;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CPUToPPUCommTarget
 {
     ControlFlags,
@@ -14,6 +14,7 @@ pub enum CPUToPPUCommTarget
     BusAddress,
     BusData,
     OAM_DMA,
+    Joystick,
     Unknown,
 }
 
@@ -23,16 +24,17 @@ impl CPUToPPUCommTarget
     {
         return match address
         {
-            0x2000 => { CPUToPPUCommTarget::ControlFlags }
-            0x2001 => { CPUToPPUCommTarget::MaskFlags }
-            0x2002 => { CPUToPPUCommTarget::StatusFlags }
-            0x2003 => { CPUToPPUCommTarget::OAMAddress }
-            0x2004 => { CPUToPPUCommTarget::OAMData }
-            0x2005 => { CPUToPPUCommTarget::ScrollPosition }
-            0x2006 => { CPUToPPUCommTarget::BusAddress }
-            0x2007 => { CPUToPPUCommTarget::BusData }
-            0x4041 => { CPUToPPUCommTarget::OAM_DMA }
-            _      => { CPUToPPUCommTarget::Unknown }
+            0x2000 => CPUToPPUCommTarget::ControlFlags,
+            0x2001 => CPUToPPUCommTarget::MaskFlags,
+            0x2002 => CPUToPPUCommTarget::StatusFlags,
+            0x2003 => CPUToPPUCommTarget::OAMAddress,
+            0x2004 => CPUToPPUCommTarget::OAMData,
+            0x2005 => CPUToPPUCommTarget::ScrollPosition,
+            0x2006 => CPUToPPUCommTarget::BusAddress,
+            0x2007 => CPUToPPUCommTarget::BusData,
+            0x4041 => CPUToPPUCommTarget::OAM_DMA,
+            0x4016 => CPUToPPUCommTarget::Joystick,
+            _      => CPUToPPUCommTarget::Unknown,
         }
     }
 }

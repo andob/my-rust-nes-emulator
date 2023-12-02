@@ -64,11 +64,10 @@ impl <'a> PatternTable<'a>
 
                         let pixel = match (plane1_pixel, plane2_pixel)
                         {
-                            // (true, true) => { ppu_bus.palette.get_color(3 as address) }
-                            // (true, false) => { ppu_bus.palette.get_color(1 as address) }
-                            // (false, true) => { ppu_bus.palette.get_color(2 as address) }
-                            (false, false) => { 0 as color } //transparent
-                            _ => { ppu_bus.palette.get_random_color() }
+                            (true, true) => ppu_bus.palette.get_color(3 as address),
+                            (true, false) => ppu_bus.palette.get_color(1 as address),
+                            (false, true) => ppu_bus.palette.get_color(2 as address),
+                            (false, false) => 0 as color, //transparent
                         };
 
                         let offset = y*pitch+x*4;

@@ -10,7 +10,11 @@ impl CharacterROM
 {
     pub fn new(mapper : mapper, bytes : &[byte]) -> CharacterROM
     {
-        return CharacterROM { mapper:mapper, bytes: bytes.to_owned().into_boxed_slice() };
+        let bytes = if !bytes.is_empty()
+            { bytes.to_owned().into_boxed_slice() } //CHR-ROM
+        else { Box::new([0; 8*1024]) }; //8kB CHR-RAM
+
+        return CharacterROM { mapper, bytes };
     }
 
     pub fn get(&self, raw_address : address) -> byte
@@ -27,6 +31,7 @@ impl CharacterROM
             return self.bytes[address];
         }
 
-        return 0;
+        let address = (raw_address as usize) % self.bytes.len();
+        return self.bytes[address];
     }
 }

@@ -68,7 +68,7 @@ impl CPU
     pub fn run(self : &mut CPU, env : CPURunEnvironment)
     {
         let cpu = self;
-        CPUInterrupts::reset(cpu);
+        CPUInterrupts::hardware_reset(cpu);
 
         let opcodes = build_opcodes_slice();
 
@@ -95,12 +95,12 @@ impl CPU
 
             if cpu.bus.channels.ppu_channels.is_ppu_signaling_that_vblank_has_started()
             {
-               CPUInterrupts::nmi(cpu);
+               CPUInterrupts::hardware_nmi(cpu);
             }
 
             if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
             {
-                CPUInterrupts::irq(cpu);
+                CPUInterrupts::hardware_irq(cpu);
             }
         }
     }

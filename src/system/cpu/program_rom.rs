@@ -27,6 +27,7 @@ impl ProgramROM
             return self.bytes[offset];
         }
 
-        return 0;
+        let address = (raw_address as usize) % self.bytes.len();
+        return self.bytes[address];
     }
 }

@@ -4,11 +4,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use crate::codeloc;
 use crate::system::byte;
 use crate::system::debugger::{LoggingOptions, PPUDebugger};
+use crate::system::joystick::Joystick;
 use crate::system::ppu::bus::PPUBus;
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::flags::control_flags::PPUControlFlags;
@@ -34,6 +34,7 @@ pub struct PPU
     pub scroll_y : byte,
     pub bus : PPUBus,
     pub oam : PPUOAM,
+    pub joystick : Joystick,
     pub cpu_channels : PPUToCPUChannels,
 }
 
@@ -58,6 +59,7 @@ impl PPU
             scroll_y: 0,
             bus: PPUBus::new(character_rom),
             oam: PPUOAM::new(),
+            joystick: Joystick::new(),
             cpu_channels: channels,
         };
     }
@@ -77,13 +79,17 @@ impl PPU
             .position_centered().opengl().build().context(codeloc!())?;
         if env.headless { window.hide(); }
         let mut canvas = window.into_canvas().index(opengl_driver_index).build().context(codeloc!())?;
+        let texture_creator = canvas.texture_creator();
+
+        let mut left_pattern_table = PatternTable::new(&texture_creator,
+            PPUBus::get_left_pattern_table_address_range()).context(codeloc!())?;
+
+        let mut right_pattern_table = PatternTable::new(&texture_creator,
+            PPUBus::get_right_pattern_table_address_range()).context(codeloc!())?;
+
         let fps = 16666667u128; //60FPS
         let mut clock_total_elapsed = 0u128;
         let mut clock_tick = Instant::now();
-
-        let texture_creator = canvas.texture_creator();
-        let mut left_pattern_table = PatternTable::new(&texture_creator, PPUBus::get_left_pattern_table_address_range())?;
-        let mut right_pattern_table = PatternTable::new(&texture_creator, PPUBus::get_right_pattern_table_address_range())?;
 
         loop
         {
@@ -95,36 +101,37 @@ impl PPU
             if should_render
             {
                 clock_tick = Instant::now();
+                clock_total_elapsed = 0;
 
                 if !env.headless && ppu.bus.palette.was_recently_changed()
                 {
-                    left_pattern_table.refresh_textures(&ppu.bus)?;
-                    right_pattern_table.refresh_textures(&ppu.bus)?;
+                    left_pattern_table.refresh_textures(&ppu.bus).context(codeloc!())?;
+                    right_pattern_table.refresh_textures(&ppu.bus).context(codeloc!())?;
                 }
 
                 canvas.set_draw_color(Color::BLACK);
                 canvas.clear();
                 canvas.present();
 
+                ppu.status_flags.has_vblank_started = true;
                 ppu.cpu_channels.signal_vblank();
-
-                thread::sleep(Duration::from_nanos(fps as u64));
             }
 
             if let Ok(target) = ppu.cpu_channels.get_read_command_from_cpu()
             {
                 ppu.cpu_channels.respond_to_read_command_from_cpu(target, match target
                 {
-                    CPUToPPUCommTarget::ControlFlags => { ppu.control_flags.to_byte() }
-                    CPUToPPUCommTarget::MaskFlags => { ppu.mask_flags.to_byte() }
-                    CPUToPPUCommTarget::StatusFlags => { ppu.status_flags.to_byte() }
-                    CPUToPPUCommTarget::OAMAddress => {0} //todo implement this
-                    CPUToPPUCommTarget::OAMData => {0} //todo implement this
-                    CPUToPPUCommTarget::ScrollPosition => {0} //todo implement this
-                    CPUToPPUCommTarget::BusAddress => {0} //todo implement this
-                    CPUToPPUCommTarget::BusData => {0} //todo implement this
-                    CPUToPPUCommTarget::OAM_DMA => {0} //todo implement this
-                    CPUToPPUCommTarget::Unknown => {0} //todo implement this
+                    CPUToPPUCommTarget::ControlFlags => ppu.control_flags.to_byte(),
+                    CPUToPPUCommTarget::MaskFlags => ppu.mask_flags.to_byte(),
+                    CPUToPPUCommTarget::StatusFlags => ppu.status_flags.to_byte(),
+                    CPUToPPUCommTarget::OAMAddress => 0, //todo implement this
+                    CPUToPPUCommTarget::OAMData => 0, //todo implement this
+                    CPUToPPUCommTarget::ScrollPosition => 0, //todo implement this
+                    CPUToPPUCommTarget::BusAddress => 0, //todo implement this
+                    CPUToPPUCommTarget::BusData => 0, //todo implement this
+                    CPUToPPUCommTarget::OAM_DMA => 0, //todo implement this
+                    CPUToPPUCommTarget::Joystick => ppu.joystick.read_pressed_key(),
+                    CPUToPPUCommTarget::Unknown => 0, //todo implement this
                 });
             }
 
@@ -132,13 +139,13 @@ impl PPU
             {
                 Ok((CPUToPPUCommTarget::ControlFlags, value)) => { ppu.control_flags = PPUControlFlags::from_byte(value); }
                 Ok((CPUToPPUCommTarget::MaskFlags, value)) => { ppu.mask_flags = PPUMaskFlags::from_byte(value); }
-                Ok((CPUToPPUCommTarget::StatusFlags, value)) => { ppu.status_flags = PPUStatusFlags::from_byte(value); }
-                Ok((CPUToPPUCommTarget::OAMAddress, value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::OAMData, value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::ScrollPosition, value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::BusAddress, value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::BusData, value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::OAM_DMA, value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::OAMAddress, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::OAMData, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::ScrollPosition, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::BusAddress, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::BusData, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::OAM_DMA, _value)) => {} //todo implement this
+                Ok((CPUToPPUCommTarget::Joystick, value)) => { ppu.joystick.set_strobe_enabled(value&1==1); }
                 _ => {}
             }
 
@@ -147,11 +154,9 @@ impl PPU
             {
                 match event
                 {
-                    Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } =>
-                    {
-                        env.is_shutting_down.store(true, Ordering::Relaxed);
-                        return Ok(());
-                    }
+                    Event::KeyDown { keycode: Some(keycode), .. } => { ppu.joystick.on_key_down(keycode); }
+                    Event::KeyUp { keycode: Some(keycode), .. } => { ppu.joystick.on_key_up(keycode); }
+                    Event::Quit { .. } => { env.is_shutting_down.store(true, Ordering::Relaxed); return Ok(()); }
                     _ => {}
                 }
             }

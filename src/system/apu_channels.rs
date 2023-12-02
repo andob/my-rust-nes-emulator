@@ -2,7 +2,7 @@ use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use crate::system::{address, byte, System};
 use crate::system::debugger::LoggingOptions;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CPUToAPUCommTarget
 {
     Square1Envelope,
@@ -13,14 +13,14 @@ pub enum CPUToAPUCommTarget
     Square2Sweep,
     Square2PeriodLow,
     Square2PeriodHigh,
-    SawCounter,
-    SawPeriodLow,
-    SawPeriodHigh,
+    TriangleCounter,
+    TrianglePeriodLow,
+    TrianglePeriodHigh,
     NoiseVolume,
     NoisePeriodLow,
     NoisePeriodHigh,
-    Status,
-    FrameCounter,
+    StatusFlags,
+    FrameCounterFlags,
     Unknown,
 }
 
@@ -30,23 +30,23 @@ impl CPUToAPUCommTarget
     {
         return match address
         {
-            0x4000 => { CPUToAPUCommTarget::Square1Envelope }
-            0x4001 => { CPUToAPUCommTarget::Square1Sweep }
-            0x4002 => { CPUToAPUCommTarget::Square1PeriodLow }
-            0x4003 => { CPUToAPUCommTarget::Square1PeriodHigh }
-            0x4004 => { CPUToAPUCommTarget::Square2Envelope }
-            0x4005 => { CPUToAPUCommTarget::Square2Sweep }
-            0x4006 => { CPUToAPUCommTarget::Square2PeriodLow }
-            0x4007 => { CPUToAPUCommTarget::Square2PeriodHigh }
-            0x4008 => { CPUToAPUCommTarget::SawCounter }
-            0x400A => { CPUToAPUCommTarget::SawPeriodLow }
-            0x400B => { CPUToAPUCommTarget::SawPeriodHigh }
-            0x400C => { CPUToAPUCommTarget::NoiseVolume }
-            0x400E => { CPUToAPUCommTarget::NoisePeriodLow }
-            0x400F => { CPUToAPUCommTarget::NoisePeriodHigh }
-            0x4015 => { CPUToAPUCommTarget::Status }
-            0x4017 => { CPUToAPUCommTarget::FrameCounter }
-            _      => { CPUToAPUCommTarget::Unknown }
+            0x4000 => CPUToAPUCommTarget::Square1Envelope,
+            0x4001 => CPUToAPUCommTarget::Square1Sweep,
+            0x4002 => CPUToAPUCommTarget::Square1PeriodLow,
+            0x4003 => CPUToAPUCommTarget::Square1PeriodHigh,
+            0x4004 => CPUToAPUCommTarget::Square2Envelope,
+            0x4005 => CPUToAPUCommTarget::Square2Sweep,
+            0x4006 => CPUToAPUCommTarget::Square2PeriodLow,
+            0x4007 => CPUToAPUCommTarget::Square2PeriodHigh,
+            0x4008 => CPUToAPUCommTarget::TriangleCounter,
+            0x400A => CPUToAPUCommTarget::TrianglePeriodLow,
+            0x400B => CPUToAPUCommTarget::TrianglePeriodHigh,
+            0x400C => CPUToAPUCommTarget::NoiseVolume,
+            0x400E => CPUToAPUCommTarget::NoisePeriodLow,
+            0x400F => CPUToAPUCommTarget::NoisePeriodHigh,
+            0x4015 => CPUToAPUCommTarget::StatusFlags,
+            0x4017 => CPUToAPUCommTarget::FrameCounterFlags,
+            _      => CPUToAPUCommTarget::Unknown,
         };
     }
 }

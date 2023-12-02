@@ -12,7 +12,7 @@ use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::debugger::{CPUDebugger, LoggingOptions, PPUDebugger};
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::{PPU, PPURunEnvironment};
-use crate::system::rom::{ROMFormat, ROMParser};
+use crate::system::rom::ROMParser;
 use crate::system::test::Test;
 
 mod cpu;
@@ -24,6 +24,7 @@ mod rom;
 pub mod apu_channels;
 pub mod ppu_channels;
 mod apu;
+mod joystick;
 
 pub type byte = u8;
 pub type mapper = u8;
@@ -59,7 +60,7 @@ impl SystemStartArgs
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
             ppu_debugger: PPUDebugger::new(),
-            headless: parsed_rom.format!=ROMFormat::iNES,
+            headless: false,
         });
     }
 }

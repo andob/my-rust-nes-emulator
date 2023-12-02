@@ -33,7 +33,7 @@ impl PPUControlFlags
     pub fn to_byte(self : &PPUControlFlags) -> byte
     {
         let encoded_base_nametable_address_as_two_bits : (byte, byte) =
-            match self.base_nametable_address { 0x2400 => {(0,1)} 0x2800 => {(1,0)} 0x2C00 => {(1,1)} _ => {(0,0)} };
+            match self.base_nametable_address { 0x2400 => (0,1), 0x2800 => (1,0), 0x2C00 => (1,1), _ => (0,0) };
 
         return ((self.is_nmi_enabled                             as byte) << 7)
              | ((self.should_output_color_on_ext_pins            as byte) << 6)
@@ -55,7 +55,7 @@ impl PPUControlFlags
             background_pattern_table_address: if (value & 0b00010000) >> 4 == 1 {0x1000} else {0},
             sprite_pattern_table_address:     if (value & 0b00001000) >> 3 == 1 {0x1000} else {0},
             vram_address_increment_amount:    if (value & 0b00000100) >> 2 == 1 {32} else {1},
-            base_nametable_address:        match (value & 0b00000011) >> 0 { 1 => {0x2400} 2 => {0x2800} 3 => {0x2C00} _ => {0x2000} },
+            base_nametable_address:        match (value & 0b00000011) >> 0 { 1 => 0x2400, 2 => 0x2800, 3 => 0x2C00, _ => 0x2000 },
         }
     }
 }
