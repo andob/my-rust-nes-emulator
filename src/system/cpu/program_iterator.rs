@@ -2,7 +2,6 @@ use crate::address_from_high_low;
 use crate::system::cpu::CPU;
 use crate::system::{address, byte};
 use crate::system::cpu::opcodes::Opcode;
-use crate::system::ram::RAM_PAGE_SIZE;
 
 #[derive(Debug)]
 pub enum AddressingMode
@@ -22,9 +21,12 @@ pub enum AddressingMode
     Unknown,
 }
 
+const RAM_PAGE_SIZE : address = 256; //one page = 256 bytes
+
 pub struct CPUProgramIterator {}
 impl CPUProgramIterator
 {
+    //noinspection RsLift
     pub fn next_argument_from_rom(cpu : &mut CPU, opcode : &Opcode) -> (address, byte)
     {
         match opcode.addressing_mode

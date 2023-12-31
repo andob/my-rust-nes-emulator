@@ -30,7 +30,7 @@ impl CPUBus
     {
         return CPUBus
         {
-            ram: RAM::new(),
+            ram: RAM::new_system_ram(),
             program_rom: program_rom,
             channels: channels,
             last_read_byte: 0,
@@ -58,7 +58,7 @@ impl CPUBus
         }
         else if raw_address >= PROGRAM_ROM_START_ADDRESS && raw_address < PROGRAM_ROM_END_ADDRESS
         {
-            return self.program_rom.get(raw_address)
+            self.program_rom.get(raw_address)
         }
         else {0};
 

@@ -93,7 +93,7 @@ impl CPU
 
             cpu.clock.notify_cpu_cycle_stopped(&opcode, &env.logging_options);
 
-            if cpu.bus.channels.ppu_channels.is_ppu_signaling_that_vblank_has_started()
+            if cpu.bus.channels.ppu_channels.ppu_is_signaling_that_vblank_has_started()
             {
                CPUInterrupts::hardware_nmi(cpu);
             }

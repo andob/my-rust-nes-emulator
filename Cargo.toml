@@ -17,6 +17,10 @@ version = "0.36.0"
 default-features = false
 features = ["ttf"]
 
+# Faster channels
+[dependencies.flume]
+version = "0.11.0"
+
 # hashmap! literal macro
 [dependencies.maplit2]
 version = "1.0.5"

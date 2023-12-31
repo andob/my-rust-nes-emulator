@@ -9,7 +9,7 @@ use crate::codeloc;
 use crate::system::apu::{APU, APURunEnvironment};
 use crate::system::cpu::{CPU, CPUChannelsToOtherSystems, CPURunEnvironment};
 use crate::system::cpu::program_rom::ProgramROM;
-use crate::system::debugger::{CPUDebugger, LoggingOptions, PPUDebugger};
+use crate::system::debugger::{CPUDebugger, LoggingOptions};
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::rom::ROMParser;
@@ -43,7 +43,6 @@ pub struct SystemStartArgs
     character_rom : CharacterROM,
     logging_options : LoggingOptions,
     cpu_debugger : CPUDebugger,
-    ppu_debugger : PPUDebugger,
     headless : bool,
 }
 
@@ -59,7 +58,6 @@ impl SystemStartArgs
             character_rom: parsed_rom.character_rom,
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
-            ppu_debugger: PPUDebugger::new(),
             headless: false,
         });
     }
@@ -83,7 +81,6 @@ impl System
 
         let ppu_run_environment = PPURunEnvironment
         {
-            debugger: args.ppu_debugger,
             logging_options: args.logging_options.clone(),
             headless: args.headless,
             is_shutting_down: is_shutting_down.clone(),

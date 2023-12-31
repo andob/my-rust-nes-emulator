@@ -29,9 +29,9 @@ impl NoiseSynth
 
     pub fn set_volume(self : &mut NoiseSynth, value : byte)
     {
-        self.should_loop          = (value & 0b00100000) >> 5 == 1;
-        self.constant_volume_flag = (value & 0b00010000) >> 4 == 1;
-        self.volume               = (value & 0b00001111) >> 0;
+        self.length_counter_halt_flag = (value & 0b00100000) >> 5 == 1;
+        self.constant_volume_flag     = (value & 0b00010000) >> 4 == 1;
+        self.volume                   = (value & 0b00001111) >> 0;
     }
 
     pub fn set_period_low(self : &mut NoiseSynth, value : byte)

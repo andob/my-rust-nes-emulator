@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use flume::{Receiver, Sender};
 use anyhow::{anyhow, Context, Result};
 use cpal::{Device, FromSample, OutputCallbackInfo, SampleFormat, SizedSample, Stream, SupportedStreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -18,7 +18,7 @@ impl Speaker
     {
         let device = cpal::default_host().default_output_device().context(codeloc!())?;
         let config = device.default_output_config().context(codeloc!())?;
-        let (waveform_sender, waveform_receiver) = channel::<f64>();
+        let (waveform_sender, waveform_receiver) = flume::unbounded::<f64>();
 
         let audio_stream = match config.sample_format()
         {

@@ -8,7 +8,7 @@ const PATTERN_TABLE0_START_ADDRESS : address = 0x0000;
 const PATTERN_TABLE0_END_ADDRESS : address = 0x0FFF;
 const PATTERN_TABLE1_START_ADDRESS : address = 0x1000;
 const PATTERN_TABLE1_END_ADDRESS : address = 0x1FFF;
-const NAMETABLE0_START_ADDRESS : address = 0x2000;
+pub const NAMETABLE0_START_ADDRESS : address = 0x2000;
 const NAMETABLE0_END_ADDRESS : address = 0x23FF;
 const NAMETABLE1_START_ADDRESS : address = 0x2400;
 const NAMETABLE1_END_ADDRESS : address = 0x27FF;
@@ -34,7 +34,7 @@ impl PPUBus
     {
         return PPUBus
         {
-            vram: RAM::new(),
+            vram: RAM::new_video_ram(),
             character_rom: character_rom,
             palette: Palette::new(),
         };
@@ -68,6 +68,11 @@ impl PPUBus
 
     pub fn put(self : &mut PPUBus, raw_address : address, value : byte)
     {
+        if raw_address >= PATTERN_TABLE0_START_ADDRESS && raw_address <= PATTERN_TABLE1_END_ADDRESS
+        {
+            self.character_rom.put(raw_address, value);
+        }
+
         if raw_address >= NAMETABLE0_START_ADDRESS && raw_address <= NAMETABLE3_END_ADDRESS
         {
             self.vram.put(raw_address-NAMETABLE0_START_ADDRESS, value);

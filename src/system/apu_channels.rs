@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use flume::{Receiver, Sender, TryRecvError};
 use crate::system::{address, byte, System};
 use crate::system::debugger::LoggingOptions;
 
@@ -125,10 +125,10 @@ impl System
 {
     pub fn create_apu_system_channels(logging_options : LoggingOptions) -> (CPUToAPUChannels, APUToCPUChannels)
     {
-        let (write_command_sender, write_command_receiver) = channel::<(CPUToAPUCommTarget, byte)>();
-        let (read_command_sender, read_command_receiver) = channel::<CPUToAPUCommTarget>();
-        let (read_command_result_sender, read_command_result_receiver) = channel::<byte>();
-        let (frame_end_signal_sender, frame_end_signal_receiver) = channel::<()>();
+        let (write_command_sender, write_command_receiver) = flume::unbounded::<(CPUToAPUCommTarget, byte)>();
+        let (read_command_sender, read_command_receiver) = flume::unbounded::<CPUToAPUCommTarget>();
+        let (read_command_result_sender, read_command_result_receiver) = flume::unbounded::<byte>();
+        let (frame_end_signal_sender, frame_end_signal_receiver) = flume::unbounded::<()>();
 
         let cpu_to_apu_channels = CPUToAPUChannels
         {

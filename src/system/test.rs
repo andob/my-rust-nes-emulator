@@ -1,10 +1,8 @@
 use anyhow::Result;
 use maplit2::hashmap;
 use crate::system::test::cpu_kevtris_nestest::test_cpu_with_kevtris_nestest;
-use crate::system::test::ppu_show_pattern_table::test_ppu_show_pattern_table;
 
 mod cpu_kevtris_nestest;
-mod ppu_show_pattern_table;
 
 pub struct Test {}
 
@@ -15,7 +13,6 @@ impl Test
         let tests = hashmap!
         {
             "cpu_kevtris_nestest" => test_cpu_with_kevtris_nestest as fn(Vec<String>) -> Result<()>,
-            "ppu_show_pattern_table" => test_ppu_show_pattern_table,
         };
 
         if let Some(test) = tests.get(test_name.as_str())

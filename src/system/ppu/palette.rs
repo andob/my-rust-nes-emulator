@@ -56,6 +56,7 @@ impl Palette
 
     pub fn was_recently_changed(&mut self) -> bool
     {
+        //todo use this
         let was_recently_changed_prev = self.was_recently_changed;
         self.was_recently_changed = false;
         return was_recently_changed_prev;

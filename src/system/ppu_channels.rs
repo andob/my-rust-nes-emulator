@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use flume::{Receiver, Sender, TryRecvError};
 use crate::system::{address, byte, System};
 use crate::system::debugger::LoggingOptions;
 
@@ -59,12 +59,12 @@ pub struct CPUToPPUChannels
 
 impl PPUToCPUChannels
 {
-    pub fn get_read_command_from_cpu(&self) -> Result<CPUToPPUCommTarget, TryRecvError>
+    pub fn get_read_command_from_cpu(&mut self) -> Result<CPUToPPUCommTarget, TryRecvError>
     {
         return self.read_command_receiver.try_recv();
     }
 
-    pub fn get_write_command_from_cpu(&self) -> Result<(CPUToPPUCommTarget, byte), TryRecvError>
+    pub fn get_write_command_from_cpu(&mut self) -> Result<(CPUToPPUCommTarget, byte), TryRecvError>
     {
         return self.write_command_receiver.try_recv();
     }
@@ -86,9 +86,11 @@ impl PPUToCPUChannels
 
 impl CPUToPPUChannels
 {
-    pub fn read(&self, address : address) -> byte
+    pub fn read(&mut self, address : address) -> byte
     {
         let target = CPUToPPUCommTarget::from_address(address);
+        //todo if we read bus data, it will become very, very slow. why?
+        if target==CPUToPPUCommTarget::BusData { return 0; }
         self.read_command_sender.send(target).unwrap_or_default();
         return self.read_command_result_receiver.recv().unwrap_or_default();
     }
@@ -103,7 +105,7 @@ impl CPUToPPUChannels
         }
     }
 
-    pub fn is_ppu_signaling_that_vblank_has_started(&self) -> bool
+    pub fn ppu_is_signaling_that_vblank_has_started(&mut self) -> bool
     {
         return self.vblank_signal_receiver.try_recv().is_ok();
     }
@@ -113,10 +115,10 @@ impl System
 {
     pub fn create_ppu_system_channels(logging_options : LoggingOptions) -> (CPUToPPUChannels, PPUToCPUChannels)
     {
-        let (write_command_sender, write_command_receiver) = channel::<(CPUToPPUCommTarget, byte)>();
-        let (read_command_sender, read_command_receiver) = channel::<CPUToPPUCommTarget>();
-        let (read_command_result_sender, read_command_result_receiver) = channel::<byte>();
-        let (vblank_signal_sender, vblank_signal_receiver) = channel::<()>();
+        let (write_command_sender, write_command_receiver) = flume::unbounded::<(CPUToPPUCommTarget, byte)>();
+        let (read_command_sender, read_command_receiver) = flume::unbounded::<CPUToPPUCommTarget>();
+        let (read_command_result_sender, read_command_result_receiver) = flume::unbounded::<byte>();
+        let (vblank_signal_sender, vblank_signal_receiver) = flume::unbounded::<()>();
 
         let cpu_to_ppu_channels = CPUToPPUChannels
         {

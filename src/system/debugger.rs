@@ -1,7 +1,7 @@
 use std::collections::HashMap;
+use flume::{Receiver, Sender};
 use crate::system::{address, byte};
 use crate::system::cpu::flags::CPUFlags;
-use std::sync::mpsc::{Receiver, Sender};
 use crate::system::cpu::CPU;
 
 #[macro_export]
@@ -27,7 +27,7 @@ impl LoggingOptions
         {
             is_cpu_opcode_logging_enabled: false,
             is_cpu_too_slow_warning_logging_enabled: false,
-            is_cpu_to_ppu_channel_logging_enabled: false,
+            is_cpu_to_ppu_channel_logging_enabled: true,
             is_cpu_to_apu_channel_logging_enabled: true,
         };
     }
@@ -116,21 +116,5 @@ impl CPUDebugger
                 }
             }
         }
-    }
-}
-
-pub struct PPUDebugger
-{
-    pub should_render_pattern_tables_for_debugging : bool, //todo implement this
-}
-
-impl PPUDebugger
-{
-    pub fn new() -> PPUDebugger
-    {
-        return PPUDebugger
-        {
-            should_render_pattern_tables_for_debugging: false,
-        };
     }
 }

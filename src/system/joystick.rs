@@ -56,8 +56,8 @@ impl Joystick
             {
                 Keycode::A         => JoystickKeycode::A,
                 Keycode::S         => JoystickKeycode::B,
-                Keycode::Return    => JoystickKeycode::Select,
-                Keycode::Backslash => JoystickKeycode::Start,
+                Keycode::Backslash => JoystickKeycode::Select,
+                Keycode::Return    => JoystickKeycode::Start,
                 Keycode::Up        => JoystickKeycode::Up,
                 Keycode::Down      => JoystickKeycode::Down,
                 Keycode::Left      => JoystickKeycode::Left,
