@@ -9,7 +9,7 @@ pub struct NoiseSynth
     volume : byte, //todo how to use this?
     constant_volume_flag : bool, //todo how to use this?
     length_counter_halt_flag : bool, //todo how to use this?
-    pub length_counter_load : byte, //todo how to use this?
+    length_counter_load : byte, //todo how to use this?
 }
 
 impl NoiseSynth
@@ -43,6 +43,11 @@ impl NoiseSynth
     pub fn set_period_high(self : &mut NoiseSynth, value : byte)
     {
         self.length_counter_load = (value & 0b11111000) >> 3;
+    }
+
+    pub fn is_length_counter_loaded(&self) -> bool
+    {
+        return self.length_counter_load>0;
     }
 }
 

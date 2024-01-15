@@ -5,7 +5,7 @@ use std::time::Instant;
 use sdl2::event::Event;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use crate::codeloc;
+use crate::{address_from_high_low, codeloc};
 use crate::system::{address, byte};
 use crate::system::debugger::LoggingOptions;
 use crate::system::joystick::Joystick;
@@ -176,9 +176,10 @@ impl PPU
                 Ok((CPUToPPUCommTarget::OAMAddress, _value)) => {} //todo implement this
                 Ok((CPUToPPUCommTarget::OAMData, _value)) => {} //todo implement this
                 Ok((CPUToPPUCommTarget::ScrollPosition, _value)) => {} //todo implement this
-                Ok((CPUToPPUCommTarget::BusAddress, value)) =>
+                Ok((CPUToPPUCommTarget::BusAddress, low)) =>
                 {
-                    ppu.bus_pointer = if ppu.is_second_bus_address_write { ppu.bus_pointer<<8 } else {0} | (value as address);
+                    let high = if ppu.is_second_bus_address_write { ppu.bus_pointer } else {0};
+                    ppu.bus_pointer = address_from_high_low!(high, low);
                     ppu.is_second_bus_address_write = !ppu.is_second_bus_address_write;
                 }
                 Ok((CPUToPPUCommTarget::BusData, value)) =>

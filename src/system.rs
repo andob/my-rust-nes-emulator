@@ -31,6 +31,8 @@ pub type mapper = u8;
 pub type address = u16;
 pub type color = u32;
 
+pub const DEFAULT_CHANNEL_SIZE : usize = 32;
+
 #[macro_export]
 macro_rules! address_from_high_low
 {

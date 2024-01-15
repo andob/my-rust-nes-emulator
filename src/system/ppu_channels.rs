@@ -1,5 +1,5 @@
 use flume::{Receiver, Sender, TryRecvError};
-use crate::system::{address, byte, System};
+use crate::system::{address, byte, DEFAULT_CHANNEL_SIZE, System};
 use crate::system::debugger::LoggingOptions;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -115,10 +115,10 @@ impl System
 {
     pub fn create_ppu_system_channels(logging_options : LoggingOptions) -> (CPUToPPUChannels, PPUToCPUChannels)
     {
-        let (write_command_sender, write_command_receiver) = flume::unbounded::<(CPUToPPUCommTarget, byte)>();
-        let (read_command_sender, read_command_receiver) = flume::unbounded::<CPUToPPUCommTarget>();
-        let (read_command_result_sender, read_command_result_receiver) = flume::unbounded::<byte>();
-        let (vblank_signal_sender, vblank_signal_receiver) = flume::unbounded::<()>();
+        let (write_command_sender, write_command_receiver) = flume::bounded::<(CPUToPPUCommTarget, byte)>(DEFAULT_CHANNEL_SIZE);
+        let (read_command_sender, read_command_receiver) = flume::bounded::<CPUToPPUCommTarget>(DEFAULT_CHANNEL_SIZE);
+        let (read_command_result_sender, read_command_result_receiver) = flume::bounded::<byte>(DEFAULT_CHANNEL_SIZE);
+        let (vblank_signal_sender, vblank_signal_receiver) = flume::bounded::<()>(DEFAULT_CHANNEL_SIZE);
 
         let cpu_to_ppu_channels = CPUToPPUChannels
         {

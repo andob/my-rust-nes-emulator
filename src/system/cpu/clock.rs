@@ -97,7 +97,7 @@ impl CPUClock
         else
         {
             let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
-            thread::sleep(Duration::from_nanos(nanoseconds_to_sleep));
+            //todo thread::sleep(Duration::from_nanos(nanoseconds_to_sleep));
         }
     }
 }

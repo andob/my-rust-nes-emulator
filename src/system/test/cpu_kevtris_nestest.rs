@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use anyhow::{anyhow, Context, Result};
 use substring::Substring;
 use crate::codeloc;
-use crate::system::{address, byte, System, SystemStartArgs};
+use crate::system::{address, byte, DEFAULT_CHANNEL_SIZE, System, SystemStartArgs};
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::debugger::CPUState;
 
@@ -13,7 +13,7 @@ pub fn test_cpu_with_kevtris_nestest(_args : Vec<String>) -> Result<()>
     let good_output_string = include_str!("cpu_kevtris_nestest/good_output.log").to_string();
     let mut good_output = parse_good_output(good_output_string).context(codeloc!())?;
 
-    let (cpu_state_sender, cpu_state_receiver) = flume::unbounded::<CPUState>();
+    let (cpu_state_sender, cpu_state_receiver) = flume::bounded::<CPUState>(DEFAULT_CHANNEL_SIZE);
 
     let mut start_args = SystemStartArgs::with_rom_bytes(Box::new(rom_bytes)).context(codeloc!())?;
     start_args.cpu_debugger.cpu_state_watcher = Some(cpu_state_sender);

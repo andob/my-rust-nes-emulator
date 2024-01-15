@@ -3,9 +3,8 @@ use crate::system::byte;
 
 pub struct TriangleSynth
 {
-    pub frequency : f64,
     length_counter_halt_flag : bool, //todo how to use this?
-    pub length_counter_load : byte, //todo how to use this?
+    length_counter_load : byte, //todo how to use this?
     linear_counter_load : byte, //todo how to use this?
     timer_low : byte, //todo how to use this?
     timer_high : byte, //todo how to use this?
@@ -17,7 +16,6 @@ impl TriangleSynth
     {
         return TriangleSynth
         {
-            frequency: 440.0,
             length_counter_halt_flag: false,
             length_counter_load: 0,
             linear_counter_load: 0,
@@ -42,6 +40,11 @@ impl TriangleSynth
         self.length_counter_load = (value & 0b11111000) >> 3;
         self.timer_high          = (value & 0b00000111) >> 0;
     }
+
+    pub fn is_length_counter_loaded(&self) -> bool
+    {
+        return self.length_counter_load>0;
+    }
 }
 
 impl Synthesizer for TriangleSynth
@@ -49,6 +52,9 @@ impl Synthesizer for TriangleSynth
     fn synthesize(&self, waveform_index : f64) -> f64
     {
         let two_pi = std::f64::consts::TAU;
-        return f64::sin(self.frequency * two_pi * waveform_index);
+        let pi_over_two = std::f64::consts::FRAC_PI_2;
+        let frequency = 440.0;
+        let sine = f64::sin(frequency * two_pi * waveform_index);
+        return sine / pi_over_two - 1.0;
     }
 }

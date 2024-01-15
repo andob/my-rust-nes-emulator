@@ -59,10 +59,10 @@ impl APUStatusFlags
         //when reading flags to be sent to CPU, synthesizer statuses should also be sent
         let mut flags = self.clone();
         flags.dmc_interrupt_flag = flags.dmc_interrupt_flag; //todo to modify while implementing DMC
-        flags.is_triangle_enabled = flags.is_triangle_enabled && apu.triangle_synth.length_counter_load>0; //todo is this condition correct
-        flags.is_square1_enabled = flags.is_square1_enabled && apu.square1_synth.length_counter_load>0; //todo is this condition correct
-        flags.is_square2_enabled = flags.is_square2_enabled && apu.square2_synth.length_counter_load>0; //todo is this condition correct
-        flags.is_noise_enabled = flags.is_noise_enabled && apu.noise_synth.length_counter_load>0; //todo is this condition correct
+        flags.is_triangle_enabled = flags.is_triangle_enabled && apu.triangle_synth.is_length_counter_loaded(); //todo is this condition correct
+        flags.is_square1_enabled = flags.is_square1_enabled && apu.square1_synth.is_length_counter_loaded(); //todo is this condition correct
+        flags.is_square2_enabled = flags.is_square2_enabled && apu.square2_synth.is_length_counter_loaded(); //todo is this condition correct
+        flags.is_noise_enabled = flags.is_noise_enabled && apu.noise_synth.is_length_counter_loaded(); //todo is this condition correct
         return flags.to_byte();
     }
 

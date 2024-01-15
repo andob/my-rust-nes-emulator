@@ -25,9 +25,9 @@ impl LoggingOptions
     {
         return LoggingOptions
         {
-            is_cpu_opcode_logging_enabled: false,
+            is_cpu_opcode_logging_enabled: true,
             is_cpu_too_slow_warning_logging_enabled: false,
-            is_cpu_to_ppu_channel_logging_enabled: true,
+            is_cpu_to_ppu_channel_logging_enabled: false,
             is_cpu_to_apu_channel_logging_enabled: true,
         };
     }
