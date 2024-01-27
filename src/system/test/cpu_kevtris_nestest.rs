@@ -16,8 +16,11 @@ pub fn test_cpu_with_kevtris_nestest(_args : Vec<String>) -> Result<()>
     let (cpu_state_sender, cpu_state_receiver) = flume::bounded::<CPUState>(DEFAULT_CHANNEL_SIZE);
 
     let mut start_args = SystemStartArgs::with_rom_bytes(Box::new(rom_bytes)).context(codeloc!())?;
+
+    start_args.should_disable_audio = true;
+    start_args.should_disable_video = true;
+    start_args.should_disable_interrupt_vectors = true;
     start_args.cpu_debugger.cpu_state_watcher = Some(cpu_state_sender);
-    start_args.headless = true;
 
     let running_system = System::start(start_args).context(codeloc!())?;
 

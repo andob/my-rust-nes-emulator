@@ -1,5 +1,3 @@
-use std::thread;
-use std::time::Duration;
 use nix::sys::time::TimeValLike;
 use nix::time::{clock_gettime, ClockId};
 use crate::system::cpu::opcodes::Opcode;
@@ -96,7 +94,7 @@ impl CPUClock
         }
         else
         {
-            let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
+            // let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
             //todo thread::sleep(Duration::from_nanos(nanoseconds_to_sleep));
         }
     }

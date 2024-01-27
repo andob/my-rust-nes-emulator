@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::thread::JoinHandle;
 use anyhow::{Context, Result};
+use maplit2::hashmap;
 use crate::codeloc;
 use crate::system::apu::{APU, APURunEnvironment};
 use crate::system::cpu::{CPU, CPUChannelsToOtherSystems, CPURunEnvironment};
@@ -45,7 +46,9 @@ pub struct SystemStartArgs
     character_rom : CharacterROM,
     logging_options : LoggingOptions,
     cpu_debugger : CPUDebugger,
-    headless : bool,
+    should_disable_audio : bool,
+    should_disable_video : bool,
+    should_disable_interrupt_vectors : bool,
 }
 
 impl SystemStartArgs
@@ -60,7 +63,9 @@ impl SystemStartArgs
             character_rom: parsed_rom.character_rom,
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
-            headless: false,
+            should_disable_audio: false,
+            should_disable_video: false,
+            should_disable_interrupt_vectors: false,
         });
     }
 }
@@ -79,19 +84,21 @@ impl System
             debugger: args.cpu_debugger,
             logging_options: args.logging_options.clone(),
             is_shutting_down: is_shutting_down.clone(),
+            should_disable_interrupt_vectors: args.should_disable_interrupt_vectors,
         };
 
         let ppu_run_environment = PPURunEnvironment
         {
             logging_options: args.logging_options.clone(),
-            headless: args.headless,
             is_shutting_down: is_shutting_down.clone(),
+            should_disable_video: args.should_disable_video,
         };
 
         let apu_run_environment = APURunEnvironment
         {
             logging_options: args.logging_options.clone(),
             is_shutting_down: is_shutting_down.clone(),
+            should_disable_audio: args.should_disable_audio,
         };
 
         let (cpu_to_ppu_channels, ppu_to_cpu_channels) =
@@ -108,16 +115,26 @@ impl System
 
         let join_handle = thread::spawn(move ||
         {
-            let join_sub_handles =
-            [
-                thread::spawn(move || CPU::new(args.program_rom, cpu_to_other_systems_channels).run(cpu_run_environment)),
-                thread::spawn(move || PPU::new(args.character_rom, ppu_to_cpu_channels).run(ppu_run_environment).unwrap()),
-                thread::spawn(move || APU::new(apu_to_cpu_channels).run(apu_run_environment).unwrap()),
-            ];
-
-            for join_sub_handle in join_sub_handles
+            let join_sub_handles = hashmap!
             {
+                "CPU" => thread::spawn(move || CPU::new(args.program_rom, cpu_to_other_systems_channels).run(cpu_run_environment)),
+                "PPU" => thread::spawn(move || PPU::new(args.character_rom, ppu_to_cpu_channels).run(ppu_run_environment).unwrap()),
+                "APU" => thread::spawn(move || APU::new(apu_to_cpu_channels).run(apu_run_environment).unwrap()),
+            };
+
+            for (thread_name, join_sub_handle) in join_sub_handles
+            {
+                if args.logging_options.is_system_threads_shutdown_logging_enabled
+                {
+                    println!("[SYS] Awaiting {} thread for its shutdown...", thread_name);
+                };
+
                 join_sub_handle.join().unwrap();
+
+                if args.logging_options.is_system_threads_shutdown_logging_enabled
+                {
+                    println!("[SYS] {} thread was shutdown!", thread_name);
+                };
             }
         });
 

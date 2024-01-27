@@ -21,18 +21,6 @@ impl CharacterROM
 
     pub fn get(&self, raw_address : address) -> byte
     {
-        if self.mapper==0
-        {
-            let address = (raw_address as usize) % self.bytes.len();
-            return self.bytes[address];
-        }
-
-        if self.mapper==1
-        {
-            let address = (raw_address as usize) % self.bytes.len();
-            return self.bytes[address];
-        }
-
         let address = (raw_address as usize) % self.bytes.len();
         return self.bytes[address];
     }

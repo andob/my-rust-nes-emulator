@@ -43,8 +43,8 @@ pub struct PPU
 pub struct PPURunEnvironment
 {
     pub logging_options : LoggingOptions,
-    pub headless : bool,
     pub is_shutting_down : Arc<AtomicBool>,
+    pub should_disable_video : bool,
 }
 
 impl PPU
@@ -69,6 +69,7 @@ impl PPU
 
     pub fn run(self : &mut PPU, env : PPURunEnvironment) -> Result<()>
     {
+        if env.should_disable_video { return Ok(()) }
         let ppu = self;
 
         let opengl_driver_index = sdl2::render::drivers().enumerate()
@@ -82,9 +83,8 @@ impl PPU
 
         let sdl = sdl2::init().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
         let video_subsystem = sdl.video().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
-        let mut window = video_subsystem.window("Emulator", (screen_width as u32)*scale, (screen_height as u32)*scale)
+        let window = video_subsystem.window("Emulator", (screen_width as u32)*scale, (screen_height as u32)*scale)
             .position_centered().opengl().build().context(codeloc!())?;
-        if env.headless { window.hide(); }
         let mut canvas = window.into_canvas().index(opengl_driver_index).build().context(codeloc!())?;
         let texture_creator = canvas.texture_creator();
 
@@ -103,7 +103,7 @@ impl PPU
 
         loop
         {
-            if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()); }
+            if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()) }
 
             clock2_total_elapsed += clock2_tick.elapsed().as_nanos();
             let should_refresh = clock2_total_elapsed >= 1000000000; //1 second

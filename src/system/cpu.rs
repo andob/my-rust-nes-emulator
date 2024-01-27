@@ -33,6 +33,7 @@ pub struct CPU
     pub program_counter : address,
     pub flags : CPUFlags,
     pub bus : CPUBus,
+    pub are_interrupt_vectors_disabled : bool,
 }
 
 pub struct CPURunEnvironment
@@ -40,6 +41,7 @@ pub struct CPURunEnvironment
     pub debugger : CPUDebugger,
     pub logging_options : LoggingOptions,
     pub is_shutting_down : Arc<AtomicBool>,
+    pub should_disable_interrupt_vectors : bool,
 }
 
 pub struct CPUChannelsToOtherSystems
@@ -62,19 +64,21 @@ impl CPU
             program_counter: 0,
             flags: CPUFlags::from_byte(0),
             bus: CPUBus::new(program_rom, channels),
+            are_interrupt_vectors_disabled: false,
         };
     }
 
     pub fn run(self : &mut CPU, env : CPURunEnvironment)
     {
         let cpu = self;
+        cpu.are_interrupt_vectors_disabled = env.should_disable_interrupt_vectors;
         CPUInterrupts::hardware_reset(cpu);
 
         let opcodes = build_opcodes_slice();
 
         loop
         {
-            if env.is_shutting_down.load(Ordering::Relaxed) { return; }
+            if env.is_shutting_down.load(Ordering::Relaxed) { return }
 
             cpu.clock.notify_cpu_cycle_started();
 

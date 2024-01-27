@@ -35,6 +35,7 @@ pub struct APURunEnvironment
 {
     pub logging_options : LoggingOptions,
     pub is_shutting_down : Arc<AtomicBool>,
+    pub should_disable_audio : bool,
 }
 
 pub trait Synthesizer
@@ -60,6 +61,7 @@ impl APU
 
     pub fn run(self : &mut APU, env : APURunEnvironment) -> Result<()>
     {
+        if env.should_disable_audio { return Ok(()) }
         let apu = self;
 
         let mut speaker = Speaker::new().context(codeloc!())?;
@@ -67,7 +69,7 @@ impl APU
 
         loop
         {
-            if env.is_shutting_down.load(Ordering::Relaxed) { speaker.pause(); return Ok(()); }
+            if env.is_shutting_down.load(Ordering::Relaxed) { speaker.pause(); return Ok(()) }
 
             let waveform_index = speaker.advance_to_next_waveform_index();
             let waveform_value = Mixer::mix(&apu, waveform_index);
@@ -107,7 +109,7 @@ impl APU
             //todo implement a proper clock
             // thread::sleep(Duration::from_millis(17));
 
-            //todo apu.cpu_channels.signal_frame_end();
+            apu.cpu_channels.signal_frame_end();
         }
     }
 }

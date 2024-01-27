@@ -1,5 +1,5 @@
 use crate::system::apu::Synthesizer;
-use crate::system::{byte, address};
+use crate::system::byte;
 
 pub struct SquareSynth
 {

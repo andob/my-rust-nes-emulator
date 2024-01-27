@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use flume::{Receiver, Sender};
 use anyhow::{anyhow, Context, Result};
 use cpal::{Device, FromSample, OutputCallbackInfo, SampleFormat, SizedSample, Stream, SupportedStreamConfig};
@@ -51,21 +52,40 @@ impl Speaker
         let number_of_channels = config.channels() as usize;
         let error_callback = |err| eprintln!("Error building output sound stream: {}", err);
 
+        let was_end_of_stream_reached = AtomicBool::new(false);
         let data_callback = move |output : &mut [T], _ : &OutputCallbackInfo|
         {
             for frame in output.chunks_mut(number_of_channels)
             {
-                let raw_value = waveform_receiver.recv().unwrap_or_default();
-                let value = T::from_sample(raw_value);
-                for frame_value in frame.iter_mut() { *frame_value = value; }
+                if !was_end_of_stream_reached.load(Ordering::Relaxed)
+                {
+                    let raw_value = waveform_receiver.recv().unwrap_or_default();
+                    if raw_value.is_nan()
+                    {
+                        was_end_of_stream_reached.store(true, Ordering::Relaxed);
+                    }
+                    else
+                    {
+                        let value = T::from_sample(raw_value);
+                        for frame_value in frame.iter_mut() { *frame_value = value; }
+                    }
+                }
             }
         };
 
         return Ok(device.build_output_stream(&config.config(), data_callback, error_callback, None).context(codeloc!())?);
     }
 
-    pub fn play(&self) { self.audio_stream.play().unwrap_or_default() }
-    pub fn pause(&self) { self.audio_stream.pause().unwrap_or_default() }
+    pub fn play(&self)
+    {
+        self.audio_stream.play().unwrap_or_default();
+    }
+
+    pub fn pause(&self)
+    {
+        self.accept_waveform_value(f64::NAN);
+        self.audio_stream.pause().unwrap_or_default();
+    }
 
     pub fn advance_to_next_waveform_index(self : &mut Speaker) -> f64
     {
