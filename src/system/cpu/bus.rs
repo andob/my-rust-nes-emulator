@@ -18,7 +18,7 @@ const PROGRAM_ROM_END_ADDRESS : address = 0xFFFF;
 
 pub struct CPUBus
 {
-    pub ram : RAM,
+    ram : RAM,
     pub program_rom : ProgramROM,
     pub channels : CPUChannelsToOtherSystems,
     last_read_byte : byte,
@@ -81,6 +81,10 @@ impl CPUBus
         else if raw_address >= APU_REGISTERS_START_ADDRESS && raw_address <= APU_REGISTERS_END_ADDRESS
         {
             self.channels.apu_channels.write(raw_address, value);
+        }
+        else if raw_address >= PROGRAM_ROM_START_ADDRESS && raw_address < PROGRAM_ROM_END_ADDRESS
+        {
+            self.program_rom.set(raw_address, value)
         }
     }
 

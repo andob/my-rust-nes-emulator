@@ -61,7 +61,7 @@ impl CPU
             Y: 0,
             stack: CPUStack::new(),
             clock: CPUClock::new(),
-            program_counter: 0,
+            program_counter: program_rom.program_start_address,
             flags: CPUFlags::from_byte(0),
             bus: CPUBus::new(program_rom, channels),
             are_interrupt_vectors_disabled: false,

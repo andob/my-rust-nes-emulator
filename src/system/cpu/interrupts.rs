@@ -42,10 +42,13 @@ impl CPUInterrupts
 
         if !cpu.are_interrupt_vectors_disabled
         {
-            let low = cpu.bus.program_rom.get(vector);
-            let high = cpu.bus.program_rom.get(vector.wrapping_add(1));
+            let low = cpu.bus.get(vector);
+            let high = cpu.bus.get(vector+1);
             let interrupt_handler_address = address_from_high_low!(high, low);
-            cpu.program_counter = interrupt_handler_address;
+
+            cpu.program_counter = if interrupt_handler_address < cpu.bus.program_rom.program_start_address
+                { interrupt_handler_address.wrapping_add(cpu.bus.program_rom.program_start_address) }
+            else { interrupt_handler_address }
         }
     }
 }

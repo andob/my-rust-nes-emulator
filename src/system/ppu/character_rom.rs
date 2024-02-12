@@ -29,7 +29,8 @@ impl CharacterROM
     {
         if self.is_writeable
         {
-            self.bytes[raw_address as usize] = value;
+            let address = (raw_address as usize) % self.bytes.len();
+            self.bytes[address] = value;
         }
     }
 }

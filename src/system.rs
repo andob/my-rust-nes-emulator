@@ -108,10 +108,7 @@ impl System
             System::create_apu_system_channels(args.logging_options.clone());
 
         let cpu_to_other_systems_channels = CPUChannelsToOtherSystems
-        {
-            ppu_channels: cpu_to_ppu_channels,
-            apu_channels: cpu_to_apu_channels,
-        };
+            { ppu_channels: cpu_to_ppu_channels, apu_channels: cpu_to_apu_channels };
 
         let join_handle = thread::spawn(move ||
         {
@@ -127,14 +124,14 @@ impl System
                 if args.logging_options.is_system_threads_shutdown_logging_enabled
                 {
                     println!("[SYS] Awaiting {} thread for its shutdown...", thread_name);
-                };
+                }
 
                 join_sub_handle.join().unwrap();
 
                 if args.logging_options.is_system_threads_shutdown_logging_enabled
                 {
                     println!("[SYS] {} thread was shutdown!", thread_name);
-                };
+                }
             }
         });
 
