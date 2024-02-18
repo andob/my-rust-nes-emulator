@@ -1,4 +1,4 @@
-use crate::system::apu::{APU, Synthesizer};
+use crate::system::apu::APU;
 
 pub struct Mixer {}
 
@@ -25,10 +25,10 @@ impl Mixer
         // else { 0.0 };
 
         //todo implement noise
-        // let noise = 0.0;
-        let noise = if apu.status_flags.is_noise_enabled
-            { apu.noise_synth.synthesize(waveform_index) }
-        else { 0.0 };
+        let noise = 0.0;
+        // let noise = if apu.status_flags.is_noise_enabled
+        //     { apu.noise_synth.synthesize(waveform_index) }
+        // else { 0.0 };
 
         return (0.2632 * (square1 + square2)) + (0.29785 * triangle + 0.1729 * noise);
     }

@@ -32,7 +32,7 @@ impl CPUToPPUCommTarget
             0x2005 => CPUToPPUCommTarget::ScrollPosition,
             0x2006 => CPUToPPUCommTarget::BusAddress,
             0x2007 => CPUToPPUCommTarget::BusData,
-            0x4041 => CPUToPPUCommTarget::OAM_DMA,
+            0x4014 => CPUToPPUCommTarget::OAM_DMA,
             0x4016 => CPUToPPUCommTarget::Joystick,
             _      => CPUToPPUCommTarget::Unknown,
         }
@@ -42,7 +42,7 @@ impl CPUToPPUCommTarget
 pub struct PPUToCPUChannels
 {
     logging_options : LoggingOptions,
-    write_command_receiver : Receiver<(CPUToPPUCommTarget, byte)>,
+    write_command_receiver : Receiver<(CPUToPPUCommTarget, Box<[byte]>)>,
     read_command_receiver : Receiver<CPUToPPUCommTarget>,
     read_command_result_sender : Sender<byte>,
     vblank_signal_sender : Sender<()>,
@@ -51,7 +51,7 @@ pub struct PPUToCPUChannels
 pub struct CPUToPPUChannels
 {
     logging_options : LoggingOptions,
-    write_command_sender : Sender<(CPUToPPUCommTarget, byte)>,
+    write_command_sender : Sender<(CPUToPPUCommTarget, Box<[byte]>)>,
     read_command_sender : Sender<CPUToPPUCommTarget>,
     read_command_result_receiver : Receiver<byte>,
     vblank_signal_receiver : Receiver<()>,
@@ -64,7 +64,7 @@ impl PPUToCPUChannels
         return self.read_command_receiver.try_recv();
     }
 
-    pub fn get_write_command_from_cpu(&mut self) -> Result<(CPUToPPUCommTarget, byte), TryRecvError>
+    pub fn get_write_command_from_cpu(&mut self) -> Result<(CPUToPPUCommTarget, Box<[byte]>), TryRecvError>
     {
         return self.write_command_receiver.try_recv();
     }
@@ -95,14 +95,16 @@ impl CPUToPPUChannels
         return self.read_command_result_receiver.recv().unwrap_or_default();
     }
 
-    pub fn write(&self, address : address, value : byte)
+    pub fn write(&self, address : address, values : Box<[byte]>)
     {
         let target = CPUToPPUCommTarget::from_address(address);
-        self.write_command_sender.send((target, value)).unwrap_or_default();
         if self.logging_options.is_cpu_to_ppu_channel_logging_enabled
         {
-            println!("[CPU→PPU] {:#04X} {:?}", value, target);
+            let first_value = values.first().cloned().unwrap_or_default();
+            println!("[CPU→PPU] {:#04X} {:?}", first_value, target);
         }
+
+        self.write_command_sender.send((target, values)).unwrap_or_default();
     }
 
     pub fn ppu_is_signaling_that_vblank_has_started(&mut self) -> bool
@@ -115,7 +117,7 @@ impl System
 {
     pub fn create_ppu_system_channels(logging_options : LoggingOptions) -> (CPUToPPUChannels, PPUToCPUChannels)
     {
-        let (write_command_sender, write_command_receiver) = flume::bounded::<(CPUToPPUCommTarget, byte)>(DEFAULT_CHANNEL_SIZE);
+        let (write_command_sender, write_command_receiver) = flume::bounded::<(CPUToPPUCommTarget, Box<[byte]>)>(DEFAULT_CHANNEL_SIZE);
         let (read_command_sender, read_command_receiver) = flume::bounded::<CPUToPPUCommTarget>(DEFAULT_CHANNEL_SIZE);
         let (read_command_result_sender, read_command_result_receiver) = flume::bounded::<byte>(DEFAULT_CHANNEL_SIZE);
         let (vblank_signal_sender, vblank_signal_receiver) = flume::bounded::<()>(DEFAULT_CHANNEL_SIZE);

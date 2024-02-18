@@ -17,7 +17,6 @@ use crate::system::rom::ROMParser;
 use crate::system::test::Test;
 
 mod cpu;
-mod ram;
 mod ppu;
 mod debugger;
 mod test;

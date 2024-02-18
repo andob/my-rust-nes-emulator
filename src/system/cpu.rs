@@ -21,6 +21,7 @@ mod clock;
 mod interrupts;
 pub mod bus;
 pub mod program_rom;
+mod ram;
 
 #[allow(non_snake_case)]
 pub struct CPU

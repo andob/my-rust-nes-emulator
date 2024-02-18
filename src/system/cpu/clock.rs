@@ -41,7 +41,6 @@ impl CPUClock
 
     pub fn now() -> u64
     {
-        //todo make it work on windows and mac os
         let result = clock_gettime(ClockId::CLOCK_MONOTONIC);
         return if let Ok(value) = result { value.num_nanoseconds() as u64 } else { 0 };
     }
@@ -94,7 +93,7 @@ impl CPUClock
         }
         else
         {
-            // let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
+            let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
             //todo thread::sleep(Duration::from_nanos(nanoseconds_to_sleep));
         }
     }

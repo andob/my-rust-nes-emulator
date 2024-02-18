@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use crate::system::{address, byte, mapper};
 
 pub struct ProgramROM
@@ -12,12 +13,20 @@ pub struct ProgramROM
 
 type large_address = usize;
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq)]
 struct SimpleMapping
 {
     source_start_address : address,
     destination_start_address : large_address,
     length : address,
+}
+
+impl Hash for SimpleMapping
+{
+    fn hash<H : Hasher>(&self, state : &mut H)
+    {
+        state.write_u16(self.source_start_address);
+    }
 }
 
 impl ProgramROM
@@ -59,7 +68,8 @@ impl ProgramROM
             return self.bytes[(mapped_address as usize) % self.bytes.len()];
         }
 
-        return 0;
+        let mapped_address = raw_address + self.program_start_address;
+        return self.bytes[(mapped_address as usize) % self.bytes.len()];
     }
 
     pub fn set(&mut self, raw_address : address, value : byte)

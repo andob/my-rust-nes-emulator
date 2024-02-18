@@ -7,14 +7,9 @@ pub struct RAM
 
 impl RAM
 {
-    pub fn new_system_ram() -> RAM
+    pub fn new() -> RAM
     {
         return RAM { bytes: Box::new([0; 2*1024]) }; //2kB
-    }
-
-    pub fn new_video_ram() -> RAM
-    {
-        return RAM { bytes: Box::new([0; 16*1024]) }; //16kB
     }
 
     pub fn get(self : &RAM, raw_address : address) -> byte

@@ -51,7 +51,7 @@ impl PPUControlFlags
         {
             is_nmi_enabled:                      (value & 0b10000000) >> 7 == 1,
             should_output_color_on_ext_pins:     (value & 0b01000000) >> 6 == 1,
-            sprite_width: 8, sprite_height:   if (value & 0b00100000) >> 5 == 1 {16} else {8},
+            sprite_width: 8, sprite_height:   if (value & 0b00100000) >> 5 == 1 /*{16}*/ {8} else {8}, //todo should be 16?
             background_pattern_table_address: if (value & 0b00010000) >> 4 == 1 {0x1000} else {0},
             sprite_pattern_table_address:     if (value & 0b00001000) >> 3 == 1 {0x1000} else {0},
             vram_address_increment_amount:    if (value & 0b00000100) >> 2 == 1 {32} else {1},

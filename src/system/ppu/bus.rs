@@ -1,13 +1,12 @@
-use std::ops::Range;
 use crate::system::{address, byte};
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::palette::Palette;
-use crate::system::ram::RAM;
+use crate::system::ppu::vram::VRAM;
 
-const PATTERN_TABLE0_START_ADDRESS : address = 0x0000;
-const PATTERN_TABLE0_END_ADDRESS : address = 0x0FFF;
-const PATTERN_TABLE1_START_ADDRESS : address = 0x1000;
-const PATTERN_TABLE1_END_ADDRESS : address = 0x1FFF;
+pub const PATTERN_TABLE0_START_ADDRESS : address = 0x0000;
+pub const PATTERN_TABLE0_END_ADDRESS : address = 0x0FFF;
+pub const PATTERN_TABLE1_START_ADDRESS : address = 0x1000;
+pub const PATTERN_TABLE1_END_ADDRESS : address = 0x1FFF;
 pub const NAMETABLE0_START_ADDRESS : address = 0x2000;
 const NAMETABLE0_END_ADDRESS : address = 0x23FF;
 const NAMETABLE1_START_ADDRESS : address = 0x2400;
@@ -23,7 +22,7 @@ const PALETTE_END_ADDRESS : address = 0x3FFF;
 
 pub struct PPUBus
 {
-    pub vram : RAM,
+    pub vram : VRAM,
     pub character_rom : CharacterROM,
     pub palette : Palette,
 }
@@ -34,7 +33,7 @@ impl PPUBus
     {
         return PPUBus
         {
-            vram: RAM::new_video_ram(),
+            vram: VRAM::new(),
             character_rom: character_rom,
             palette: Palette::new(),
         };
@@ -88,15 +87,5 @@ impl PPUBus
         {
             self.palette.put_index(raw_address-PALETTE_START_ADDRESS, value);
         }
-    }
-
-    pub fn get_left_pattern_table_address_range() -> Range<address>
-    {
-        return PATTERN_TABLE0_START_ADDRESS..PATTERN_TABLE0_END_ADDRESS;
-    }
-
-    pub fn get_right_pattern_table_address_range() -> Range<address>
-    {
-        return PATTERN_TABLE1_START_ADDRESS..PATTERN_TABLE1_END_ADDRESS;
     }
 }

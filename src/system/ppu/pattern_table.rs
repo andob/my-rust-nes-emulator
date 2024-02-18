@@ -1,11 +1,11 @@
 use std::ops::Range;
 use anyhow::{anyhow, Context, Result};
 use sdl2::pixels::PixelFormatEnum;
-use sdl2::render::{Texture, TextureCreator};
+use sdl2::render::{BlendMode, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use crate::codeloc;
 use crate::system::{address, byte, color};
-use crate::system::ppu::bus::PPUBus;
+use crate::system::ppu::bus::{PATTERN_TABLE0_END_ADDRESS, PATTERN_TABLE0_START_ADDRESS, PATTERN_TABLE1_END_ADDRESS, PATTERN_TABLE1_START_ADDRESS, PPUBus};
 use crate::system::ppu::character_rom::CharacterROM;
 
 const NUMBER_OF_TILES_IN_PATTERN_TABLE : address = 255;
@@ -29,11 +29,12 @@ impl <'a> PatternTable<'a>
         let mut textures : Vec<Box<Texture>> = Vec::new();
         for _tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
         {
-            let texture = texture_creator.create_texture_streaming(
+            let mut texture = texture_creator.create_texture_streaming(
                 /*format*/ PixelFormatEnum::RGBA8888,
                 /*width*/ TILE_WIDTH_IN_PIXELS as u32,
                 /*height*/ TILE_HEIGHT_IN_PIXELS as u32,
             ).context(codeloc!())?;
+            texture.set_blend_mode(BlendMode::Blend);
 
             textures.push(Box::new(texture));
         }
@@ -91,6 +92,26 @@ impl <'a> PatternTable<'a>
     pub fn get(&self, index : address) -> &Texture<'a>
     {
         return &self.textures[(index % NUMBER_OF_TILES_IN_PATTERN_TABLE) as usize];
+    }
+}
+
+pub struct PatternTables<'a>
+{
+    pub left : PatternTable<'a>,
+    pub right : PatternTable<'a>,
+}
+
+impl <'a> PatternTables<'a>
+{
+    pub fn new(texture_creator : &'a TextureCreator<WindowContext>) -> Result<PatternTables<'a>>
+    {
+        let left_address_range = PATTERN_TABLE0_START_ADDRESS..PATTERN_TABLE0_END_ADDRESS;
+        let left = PatternTable::new(texture_creator, left_address_range).context(codeloc!())?;
+
+        let right_address_range = PATTERN_TABLE1_START_ADDRESS..PATTERN_TABLE1_END_ADDRESS;
+        let right = PatternTable::new(texture_creator, right_address_range).context(codeloc!())?;
+
+        return Ok(PatternTables { left, right });
     }
 }
 

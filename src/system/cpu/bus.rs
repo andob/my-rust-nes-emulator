@@ -1,7 +1,8 @@
+use crate::address_from_high_low;
 use crate::system::{address, byte};
 use crate::system::cpu::CPUChannelsToOtherSystems;
 use crate::system::cpu::program_rom::ProgramROM;
-use crate::system::ram::RAM;
+use crate::system::cpu::ram::RAM;
 
 const RAM_START_ADDRESS : address = 0x0000;
 const RAM_END_ADDRESS : address = 0x1FFF;
@@ -30,7 +31,7 @@ impl CPUBus
     {
         return CPUBus
         {
-            ram: RAM::new_system_ram(),
+            ram: RAM::new(),
             program_rom: program_rom,
             channels: channels,
             last_read_byte: 0,
@@ -72,11 +73,19 @@ impl CPUBus
         {
             self.ram.put(raw_address, value);
         }
-        else if (raw_address >= PPU_REGISTERS_START_ADDRESS && raw_address <= PPU_REGISTERS_END_ADDRESS)
-              || raw_address == PPU_OAM_DMA_ADDRESS || raw_address == JOYSTICK_ADDRESS
+        else if raw_address == PPU_OAM_DMA_ADDRESS
+        {
+            let start_address = address_from_high_low!(value, 0x00);
+            let end_address = address_from_high_low!(value, 0xFF);
+            let values_to_copy = (start_address..=end_address)
+                .map(|address| self.get(address)).collect::<Vec<byte>>().into_boxed_slice();
+            let channel_address = self.convert_raw_address_to_ppu_channel_address(raw_address);
+            self.channels.ppu_channels.write(channel_address, values_to_copy);
+        }
+        else if (raw_address >= PPU_REGISTERS_START_ADDRESS && raw_address <= PPU_REGISTERS_END_ADDRESS) || raw_address == JOYSTICK_ADDRESS
         {
             let channel_address = self.convert_raw_address_to_ppu_channel_address(raw_address);
-            self.channels.ppu_channels.write(channel_address, value);
+            self.channels.ppu_channels.write(channel_address, Box::new([value]));
         }
         else if raw_address >= APU_REGISTERS_START_ADDRESS && raw_address <= APU_REGISTERS_END_ADDRESS
         {
