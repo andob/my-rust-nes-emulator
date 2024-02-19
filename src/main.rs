@@ -12,7 +12,7 @@ fn main() -> Result<()>
     if args.len()>=2 && args[1]=="test"
     {
         let test_name = args.get(2).cloned().unwrap_or_default();
-        System::test().run_test(test_name, args).context(codeloc!())?;
+        System::test().run_test(test_name).context(codeloc!())?;
     }
     else if args.len()>=2
     {

@@ -6,9 +6,9 @@ use crate::system::{address, byte, DEFAULT_CHANNEL_SIZE, System, SystemStartArgs
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::debugger::CPUState;
 
-pub fn test_cpu_with_kevtris_nestest(_args : Vec<String>) -> Result<()>
+pub fn test_cpu_with_kevtris_nestest() -> Result<()>
 {
-    let rom_bytes = *include_bytes!("cpu_kevtris_nestest/nestest.nes");
+    let rom_bytes = *include_bytes!("roms/cpu_kevtris_nestest.nes");
 
     let good_output_string = include_str!("cpu_kevtris_nestest/good_output.log").to_string();
     let mut good_output = parse_good_output(good_output_string).context(codeloc!())?;

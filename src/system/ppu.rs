@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Instant;
 use itertools::Itertools;
 use sdl2::event::{Event, WindowEvent};
 use crate::codeloc;
@@ -10,6 +9,7 @@ use crate::system::debugger::LoggingOptions;
 use crate::system::joystick::Joystick;
 use crate::system::ppu::bus::PPUBus;
 use crate::system::ppu::character_rom::CharacterROM;
+use crate::system::ppu::clock::PPUClock;
 use crate::system::ppu::flags::control_flags::PPUControlFlags;
 use crate::system::ppu::flags::mask_flags::PPUMaskFlags;
 use crate::system::ppu::flags::status_flags::PPUStatusFlags;
@@ -29,6 +29,7 @@ mod vram;
 mod metrics;
 mod communication;
 mod rendering;
+mod clock;
 
 pub struct PPU
 {
@@ -42,6 +43,7 @@ pub struct PPU
     pub joystick : Joystick,
     pub cpu_channels : PPUToCPUChannels,
     pub window_metrics : WindowMetrics,
+    pub clock : PPUClock,
     is_second_scroll_write : bool,
     is_second_bus_pointer_write : bool,
     bus_pointer : address,
@@ -71,6 +73,7 @@ impl PPU
             joystick: Joystick::new(),
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
+            clock: PPUClock::new(),
             is_second_scroll_write: false,
             is_second_bus_pointer_write: false,
             bus_pointer: 0,
@@ -87,42 +90,27 @@ impl PPU
         let video_subsystem = sdl.video().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
         let window = video_subsystem.window("Emulator", ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
             .position_centered().resizable().opengl().build().context(codeloc!())?;
-        let opengl_driver_index = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap().0;
+        let (opengl_driver_index, _) = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap();
         let mut canvas = window.into_canvas().index(opengl_driver_index as u32).build().context(codeloc!())?;
         let texture_creator = canvas.texture_creator();
         let mut pattern_tables = PatternTables::new(&texture_creator).context(codeloc!())?;
-
-        //todo implement a proper, clock + VBLANK algorithm
-        let fps = 16666667u128; //60FPS
-        let mut clock_total_elapsed = 0u128;
-        let mut clock_tick = Instant::now();
-        let mut clock2_total_elapsed = 0u128;
-        let mut clock2_tick = Instant::now();
 
         loop
         {
             if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()) }
 
-            clock2_total_elapsed += clock2_tick.elapsed().as_nanos();
-            let should_refresh = clock2_total_elapsed >= 1000000000; //1 second
-            if should_refresh
+            let ppu_clock_tick_result = ppu.clock.tick();
+            if ppu_clock_tick_result.should_notify_vblank_status_ended
             {
-                clock2_tick = Instant::now();
-                clock2_total_elapsed = 0;
-
+                ppu.status_flags.has_vblank_started = false;
+            }
+            else if ppu_clock_tick_result.should_notify_vblank_status_started
+            {
                 if ppu.bus.palette.was_recently_changed()
                 {
                     pattern_tables.left.refresh_textures(&ppu.bus).context(codeloc!())?;
                     pattern_tables.right.refresh_textures(&ppu.bus).context(codeloc!())?;
                 }
-            }
-
-            clock_total_elapsed += clock_tick.elapsed().as_nanos();
-            let should_render = clock_total_elapsed >= fps;
-            if should_render
-            {
-                clock_tick = Instant::now();
-                clock_total_elapsed = 0;
 
                 let pipeline = PPURenderingPipeline::start(&ppu, &pattern_tables, &mut canvas);
                 pipeline.render_oam_background_sprites(&mut canvas);

@@ -1,7 +1,6 @@
-use nix::sys::time::TimeValLike;
-use nix::time::{clock_gettime, ClockId};
+use std::thread;
+use std::time::Duration;
 use crate::system::cpu::opcodes::Opcode;
-use crate::system::debugger::LoggingOptions;
 
 #[allow(non_camel_case_types)]
 pub enum ExpectedDuration
@@ -20,29 +19,26 @@ pub enum ExpectedDuration
 
 pub struct CPUClock
 {
-    frequency : u64,
+    cycle_count : u64,
+    cycle_count_threshold : u64,
+    sleep_duration : Duration,
     was_page_boundary_crossed : bool,
     was_branch_taken : bool,
-    cycle_started_at : u64,
 }
 
 impl CPUClock
 {
     pub fn new() -> CPUClock
     {
+        //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
         return CPUClock
         {
-            frequency: 1660000, //1.66Mhz
+            cycle_count: 0,
+            cycle_count_threshold: 3000,
+            sleep_duration: Duration::from_millis(1),
             was_page_boundary_crossed: false,
             was_branch_taken: false,
-            cycle_started_at: 0,
         };
-    }
-
-    pub fn now() -> u64
-    {
-        let result = clock_gettime(ClockId::CLOCK_MONOTONIC);
-        return if let Ok(value) = result { value.num_nanoseconds() as u64 } else { 0 };
     }
 
     pub fn notify_page_boundary_crossed(&mut self)
@@ -59,12 +55,11 @@ impl CPUClock
     {
         self.was_page_boundary_crossed = false;
         self.was_branch_taken = false;
-        self.cycle_started_at = CPUClock::now();
     }
 
-    pub fn notify_cpu_cycle_stopped(&mut self, opcode : &Opcode, logging_options : &LoggingOptions)
+    pub fn notify_cpu_cycle_stopped(&mut self, opcode : &Opcode)
     {
-        let expected_duration : u64 = match opcode.expected_duration
+        let current_cycle_count : u64 = match opcode.expected_duration
         {
             ExpectedDuration::_2  => 2,
             ExpectedDuration::_3  => 3,
@@ -78,23 +73,12 @@ impl CPUClock
             ExpectedDuration::bra => 1+(self.was_page_boundary_crossed as u64)+(self.was_branch_taken as u64),
         };
 
-        let one_second_in_ns = 1_000_000_000u64; //1second
-        let target_nanoseconds = expected_duration*(one_second_in_ns/self.frequency);
+        self.cycle_count += current_cycle_count;
 
-        let now = CPUClock::now();
-        let elapsed_nanoseconds = now-self.cycle_started_at;
-
-        if elapsed_nanoseconds >= target_nanoseconds
+        if self.cycle_count >= self.cycle_count_threshold
         {
-            if logging_options.is_cpu_too_slow_warning_logging_enabled
-            {
-                println!("[CPU] CPU IS TOO SLOW! {} < {}", target_nanoseconds, elapsed_nanoseconds);
-            }
-        }
-        else
-        {
-            let nanoseconds_to_sleep = target_nanoseconds-elapsed_nanoseconds;
-            //todo thread::sleep(Duration::from_nanos(nanoseconds_to_sleep));
+            self.cycle_count = 0;
+            thread::sleep(self.sleep_duration);
         }
     }
 }

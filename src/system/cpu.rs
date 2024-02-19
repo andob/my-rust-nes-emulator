@@ -96,7 +96,7 @@ impl CPU
 
             env.debugger.notify_cpu_state_to_watchers(cpu);
 
-            cpu.clock.notify_cpu_cycle_stopped(&opcode, &env.logging_options);
+            cpu.clock.notify_cpu_cycle_stopped(&opcode);
 
             if cpu.bus.channels.ppu_channels.ppu_is_signaling_that_vblank_has_started()
             {

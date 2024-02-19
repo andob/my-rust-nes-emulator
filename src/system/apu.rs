@@ -4,11 +4,14 @@ mod mixer;
 mod noise_synth;
 mod speaker;
 mod flags;
+mod communication;
+mod clock;
 
 use anyhow::{Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use crate::codeloc;
+use crate::system::apu::clock::APUClock;
 use crate::system::apu::flags::frame_counter_flags::APUFrameCounterFlags;
 use crate::system::apu::flags::status_flags::APUStatusFlags;
 use crate::system::apu::mixer::Mixer;
@@ -16,8 +19,7 @@ use crate::system::apu::noise_synth::NoiseSynth;
 use crate::system::apu::speaker::Speaker;
 use crate::system::apu::square_synth::SquareSynth;
 use crate::system::apu::triangle_synth::TriangleSynth;
-use crate::system::apu_channels::{APUToCPUChannels, CPUToAPUCommTarget};
-use crate::system::byte;
+use crate::system::apu_channels::APUToCPUChannels;
 use crate::system::debugger::LoggingOptions;
 
 pub struct APU
@@ -29,6 +31,7 @@ pub struct APU
     pub status_flags : APUStatusFlags,
     pub frame_counter_flags : APUFrameCounterFlags,
     pub cpu_channels : APUToCPUChannels,
+    pub clock : APUClock,
 }
 
 pub struct APURunEnvironment
@@ -56,6 +59,7 @@ impl APU
             status_flags: APUStatusFlags::new(),
             frame_counter_flags: APUFrameCounterFlags::new(),
             cpu_channels: channels,
+            clock: APUClock::new(),
         };
     }
 
@@ -75,41 +79,13 @@ impl APU
             let waveform_value = Mixer::mix(&apu, waveform_index);
             speaker.accept_waveform_value(waveform_value);
 
-            if let Ok(target) = apu.cpu_channels.get_read_command_from_cpu()
+            apu.handle_read_commands_from_cpu();
+            apu.handle_write_commands_from_cpu();
+
+            if apu.clock.should_notify_apu_frame_has_ended()
             {
-                apu.cpu_channels.respond_to_read_command_from_cpu(target, match target
-                {
-                    CPUToAPUCommTarget::StatusFlags => apu.status_flags.to_byte_for_cpu_reading(&apu),
-                    CPUToAPUCommTarget::FrameCounterFlags => apu.frame_counter_flags.to_byte(),
-                    _ => 0 as byte,
-                });
+                apu.cpu_channels.signal_frame_end();
             }
-
-            match apu.cpu_channels.get_write_command_from_cpu()
-            {
-                Ok((CPUToAPUCommTarget::Square1Envelope, value)) => { apu.square1_synth.set_envelope(value); }
-                Ok((CPUToAPUCommTarget::Square1Sweep, value)) => { apu.square1_synth.set_sweep(value); }
-                Ok((CPUToAPUCommTarget::Square1PeriodLow, value)) => { apu.square1_synth.set_period_low(value); }
-                Ok((CPUToAPUCommTarget::Square1PeriodHigh, value)) => { apu.square1_synth.set_period_high(value); }
-                Ok((CPUToAPUCommTarget::Square2Envelope, value)) => { apu.square2_synth.set_envelope(value); }
-                Ok((CPUToAPUCommTarget::Square2Sweep, value)) => { apu.square2_synth.set_sweep(value); }
-                Ok((CPUToAPUCommTarget::Square2PeriodLow, value)) => { apu.square2_synth.set_period_low(value); }
-                Ok((CPUToAPUCommTarget::Square2PeriodHigh, value)) => { apu.square2_synth.set_period_high(value); }
-                Ok((CPUToAPUCommTarget::TriangleCounter, value)) => { apu.triangle_synth.set_counter(value); }
-                Ok((CPUToAPUCommTarget::TrianglePeriodLow, value)) => { apu.triangle_synth.set_period_low(value); }
-                Ok((CPUToAPUCommTarget::TrianglePeriodHigh, value)) => { apu.triangle_synth.set_period_high(value); }
-                Ok((CPUToAPUCommTarget::NoiseVolume, value)) => { apu.noise_synth.set_volume(value); }
-                Ok((CPUToAPUCommTarget::NoisePeriodLow, value)) => { apu.noise_synth.set_period_low(value); }
-                Ok((CPUToAPUCommTarget::NoisePeriodHigh, value)) => { apu.noise_synth.set_period_high(value); }
-                Ok((CPUToAPUCommTarget::StatusFlags, value)) => { apu.status_flags = APUStatusFlags::from_byte_for_cpu_writing(&apu, value); }
-                Ok((CPUToAPUCommTarget::FrameCounterFlags, value)) => { apu.frame_counter_flags = APUFrameCounterFlags::from_byte(value); }
-                _ => {}
-            }
-
-            //todo implement a proper clock
-            // thread::sleep(Duration::from_millis(17));
-
-            apu.cpu_channels.signal_frame_end();
         }
     }
 }

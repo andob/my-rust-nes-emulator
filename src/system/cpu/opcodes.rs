@@ -731,7 +731,7 @@ fn sbc(cpu : &mut CPU, _address : address, value : byte)
     //substract with carry
     let new_value_16b = (cpu.A as i16) - (value as i16) - ((!cpu.flags.carry) as i16);
     let sign_flag = if new_value_16b<0 { -1 } else { 1 };
-    let new_value_8b = ((new_value_16b.abs()&0xFF) as i8) * sign_flag;
+    let new_value_8b = ((new_value_16b.abs()&0xFF) as i8).wrapping_mul(sign_flag);
     let old_accumulator = cpu.A;
     cpu.A = new_value_8b as u8;
     cpu.flags.carry = old_accumulator>=value;

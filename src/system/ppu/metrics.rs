@@ -5,8 +5,8 @@ pub const NES_DISPLAY_HEIGHT : address = 240;
 
 pub struct WindowMetrics
 {
-    scale_x: f32,
-    scale_y: f32,
+    scale_x : f32,
+    scale_y : f32,
 }
 
 impl WindowMetrics
