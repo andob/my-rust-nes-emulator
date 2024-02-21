@@ -348,7 +348,7 @@ fn bit(cpu : &mut CPU, _address : address, value : byte)
 
 fn branch(cpu : &mut CPU, signed_offset : byte)
 {
-    let abs_offset = (signed_offset as i8).abs() as address;
+    let abs_offset = ((signed_offset as i8) as i16).abs() as address;
     if isneg!(signed_offset)
     {
         cpu.program_counter = cpu.program_counter.wrapping_sub(abs_offset);
@@ -903,7 +903,7 @@ fn unofficial_hlt(_cpu : &mut CPU, _address : address, opcode_key: byte)
 {
     //CPU halt
     //todo should panic?
-    println!("CPU was halted! Opcode {:#04X}!", opcode_key);
+    //todo println!("CPU was halted! Opcode {:#04X}!", opcode_key);
 }
 
 fn unofficial_lar(cpu : &mut CPU, _address : address, value : byte)

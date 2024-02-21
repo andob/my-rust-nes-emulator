@@ -113,6 +113,13 @@ impl <'a> PatternTables<'a>
 
         return Ok(PatternTables { left, right });
     }
+
+    pub fn get(&self, base_address : address, relative_address : address) -> &Texture<'a>
+    {
+        return if self.left.address_range.contains(&base_address) { self.left.get(relative_address) }
+        else if self.right.address_range.contains(&base_address) { self.right.get(relative_address) }
+        else { self.left.get(relative_address) }
+    }
 }
 
 impl CharacterROM

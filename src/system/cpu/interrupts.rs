@@ -11,26 +11,32 @@ impl CPUInterrupts
         if !cpu.flags._break
         {
             cpu.flags._break = true;
-            CPUInterrupts::interrupt(cpu, 0xFFFE);
+
+            let vector = cpu.bus.program_rom.len()-2;
+            CPUInterrupts::interrupt(cpu, vector as address);
         }
     }
 
     pub fn hardware_irq(cpu : &mut CPU)
     {
         //IRQ = interrupt request
-        CPUInterrupts::interrupt(cpu, 0xFFFE);
+        let vector = cpu.bus.program_rom.len()-2;
+        CPUInterrupts::interrupt(cpu, vector as address);
     }
 
     pub fn hardware_reset(cpu : &mut CPU)
     {
         cpu.flags.interrupt = true;
-        CPUInterrupts::interrupt(cpu, 0xFFFC);
+
+        let vector = cpu.bus.program_rom.len()-4;
+        CPUInterrupts::interrupt(cpu, vector as address);
     }
 
     pub fn hardware_nmi(cpu : &mut CPU)
     {
         //NMI = non-maskable interrupt
-        CPUInterrupts::interrupt(cpu, 0xFFFA);
+        let vector = cpu.bus.program_rom.len()-6;
+        CPUInterrupts::interrupt(cpu, vector as address);
     }
 
     fn interrupt(cpu : &mut CPU, vector : address)
@@ -42,9 +48,8 @@ impl CPUInterrupts
 
         if !cpu.are_interrupt_vectors_disabled
         {
-            let normalized_vector = vector.wrapping_add(cpu.bus.program_rom.program_start_address);
-            let low = cpu.bus.get(normalized_vector);
-            let high = cpu.bus.get(normalized_vector+1);
+            let low = cpu.bus.program_rom.get(vector);
+            let high = cpu.bus.program_rom.get(vector+1);
             let interrupt_handler_address = address_from_high_low!(high, low);
             cpu.program_counter = interrupt_handler_address;
         }

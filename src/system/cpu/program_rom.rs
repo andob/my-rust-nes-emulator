@@ -53,6 +53,7 @@ impl ProgramROM
 
     pub fn get(&self, raw_address : address) -> byte
     {
+
         if raw_address>=self.program_start_address && raw_address<=self.program_end_address
         {
             for mapping in &self.mappings
@@ -68,8 +69,7 @@ impl ProgramROM
             return self.bytes[(mapped_address as usize) % self.bytes.len()];
         }
 
-        let mapped_address = raw_address + self.program_start_address;
-        return self.bytes[(mapped_address as usize) % self.bytes.len()];
+        return self.bytes[(raw_address as usize) % self.bytes.len()];
     }
 
     pub fn set(&mut self, raw_address : address, value : byte)

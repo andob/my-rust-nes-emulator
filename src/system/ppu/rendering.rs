@@ -2,7 +2,6 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use crate::system::address;
-use crate::system::ppu::bus::NAMETABLE0_START_ADDRESS;
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::oam::PPUOAMSpriteDescriptor;
 use crate::system::ppu::pattern_table::PatternTables;
@@ -39,9 +38,9 @@ impl <'a> PPURenderingPipeline<'a>
         {
             for x_index in 0..=number_of_rows
             {
-                let nametable_address = NAMETABLE0_START_ADDRESS + y_index * number_of_rows + x_index;
+                let nametable_address = self.ppu.control_flags.base_nametable_address + y_index * number_of_rows + x_index;
                 let pattern_table_index = self.ppu.bus.get(nametable_address) as address;
-                let pattern = self.pattern_tables.left.get(pattern_table_index);
+                let pattern = self.pattern_tables.get(self.ppu.control_flags.base_pattern_table_address, pattern_table_index);
 
                 let width = (self.ppu.control_flags.sprite_width as f32) * scale_x;
                 let height = (self.ppu.control_flags.sprite_height as f32) * scale_y;
