@@ -57,7 +57,7 @@ impl CPUBus
         {
             self.channels.apu_channels.read(raw_address)
         }
-        else if raw_address >= PROGRAM_ROM_START_ADDRESS && raw_address < PROGRAM_ROM_END_ADDRESS
+        else if raw_address >= PROGRAM_ROM_START_ADDRESS && raw_address <= PROGRAM_ROM_END_ADDRESS
         {
             self.program_rom.get(raw_address)
         }

@@ -59,10 +59,18 @@ impl PPU
             }
             Ok((CPUToPPUCommTarget::BusAddress, values)) =>
             {
-                let low = values[0] as address;
-                let high = if ppu.is_second_bus_pointer_write { ppu.bus_pointer } else { 0 };
-                ppu.bus_pointer = address_from_high_low!(high, low);
-                ppu.is_second_bus_pointer_write = !ppu.is_second_bus_pointer_write;
+                if ppu.is_second_bus_pointer_write
+                {
+                    let high = ppu.first_bus_pointer_write;
+                    let low = values[0] as address;
+                    ppu.bus_pointer = address_from_high_low!(high, low);
+                    ppu.is_second_bus_pointer_write = false;
+                }
+                else
+                {
+                    ppu.first_bus_pointer_write = values[0];
+                    ppu.is_second_bus_pointer_write = true;
+                }
             }
             Ok((CPUToPPUCommTarget::BusData, values)) =>
             {

@@ -903,7 +903,7 @@ fn unofficial_hlt(_cpu : &mut CPU, _address : address, opcode_key: byte)
 {
     //CPU halt
     //todo should panic?
-    //todo println!("CPU was halted! Opcode {:#04X}!", opcode_key);
+    println!("CPU was halted! Opcode {:#04X}!", opcode_key);
 }
 
 fn unofficial_lar(cpu : &mut CPU, _address : address, value : byte)
