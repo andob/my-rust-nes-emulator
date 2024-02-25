@@ -102,12 +102,18 @@ impl PPU
             if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()) }
 
             let ppu_clock_tick_result = ppu.clock.tick();
-            if ppu_clock_tick_result.should_notify_vblank_status_ended
+            if ppu_clock_tick_result.should_notify_vblank_status_started
+            {
+                ppu.status_flags.has_vblank_started = true;
+                if ppu.control_flags.is_nmi_enabled
+                {
+                    ppu.cpu_channels.signal_vblank();
+                }
+            }
+            else if ppu_clock_tick_result.should_notify_vblank_status_ended
             {
                 ppu.status_flags.has_vblank_started = false;
-            }
-            else if ppu_clock_tick_result.should_notify_vblank_status_started
-            {
+
                 if ppu.bus.palette.was_recently_changed()
                 {
                     pattern_tables.left.refresh_textures(&ppu.bus).context(codeloc!())?;
@@ -119,9 +125,6 @@ impl PPU
                 pipeline.render_nametable_background(&mut canvas);
                 pipeline.render_oam_foreground_sprites(&mut canvas);
                 pipeline.commit_rendering(&mut canvas);
-
-                ppu.status_flags.has_vblank_started = true;
-                ppu.cpu_channels.signal_vblank();
             }
 
             ppu.handle_read_commands_from_cpu();

@@ -709,11 +709,11 @@ fn rti(cpu : &mut CPU, _address : address, _value : byte)
     if let Some(new_address) = CPUStack::pop_address(cpu)
     {
         cpu.program_counter = new_address;
-    }
 
-    if let Some(flags_byte) = cpu_flags_to_restore
-    {
-        cpu.flags = CPUFlags::from_byte(flags_byte);
+        if let Some(flags_byte) = cpu_flags_to_restore
+        {
+            cpu.flags = CPUFlags::from_byte(flags_byte);
+        }
     }
 }
 

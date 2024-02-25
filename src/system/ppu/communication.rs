@@ -75,7 +75,7 @@ impl PPU
             Ok((CPUToPPUCommTarget::BusData, values)) =>
             {
                 ppu.bus.put(ppu.bus_pointer, values[0]);
-                ppu.bus_pointer = ppu.bus_pointer.wrapping_add(1);
+                ppu.bus_pointer = ppu.bus_pointer.wrapping_add(ppu.control_flags.vram_address_increment_amount as address);
             }
             Ok((CPUToPPUCommTarget::OAM_DMA, values)) =>
             {

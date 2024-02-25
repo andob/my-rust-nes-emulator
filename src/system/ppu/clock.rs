@@ -19,11 +19,15 @@ impl PPUClock
     pub fn new() -> PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
+        let number_of_visible_scan_lines = 240u64;
+        let number_of_hidden_scan_lines = 22u64;
+        let factor = 75u64;
+
         return PPUClock
         {
             cycle_count: 0,
-            cycle_count_vblank_start_threshold: 5000,
-            cycle_count_vblank_end_threshold: 10000,
+            cycle_count_vblank_start_threshold: (number_of_visible_scan_lines+1)*factor,
+            cycle_count_vblank_end_threshold: (number_of_visible_scan_lines+number_of_hidden_scan_lines+1)*factor,
             was_vblank_start_notified: false,
             was_vblank_end_notified: false,
         }

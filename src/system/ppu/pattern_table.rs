@@ -10,8 +10,8 @@ use crate::system::ppu::character_rom::CharacterROM;
 
 const NUMBER_OF_TILES_IN_PATTERN_TABLE : address = 255;
 const TILE_SIZE_IN_BYTES : address = 16;
-const TILE_WIDTH_IN_PIXELS : address = 8;
-const TILE_HEIGHT_IN_PIXELS : address = 8;
+pub const TILE_WIDTH_IN_PIXELS : address = 8;
+pub const TILE_HEIGHT_IN_PIXELS : address = 8;
 const TILE_PLANE_SIZE_IN_BYTES : address = 8;
 type tile_plane = [byte; TILE_PLANE_SIZE_IN_BYTES as usize];
 

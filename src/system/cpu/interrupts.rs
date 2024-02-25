@@ -8,6 +8,7 @@ impl CPUInterrupts
 {
     pub fn software_irq(cpu : &mut CPU)
     {
+        //IRQ = interrupt request
         if !cpu.flags._break
         {
             cpu.flags._break = true;
@@ -20,8 +21,13 @@ impl CPUInterrupts
     pub fn hardware_irq(cpu : &mut CPU)
     {
         //IRQ = interrupt request
-        let vector = cpu.bus.program_rom.len()-2;
-        CPUInterrupts::interrupt(cpu, vector as address);
+        if !cpu.flags._break
+        {
+            cpu.flags._break = true;
+
+            let vector = cpu.bus.program_rom.len()-2;
+            CPUInterrupts::interrupt(cpu, vector as address);
+        }
     }
 
     pub fn hardware_reset(cpu : &mut CPU)
