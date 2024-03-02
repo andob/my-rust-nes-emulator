@@ -36,8 +36,8 @@ pub struct PPU
     pub status_flags : PPUStatusFlags,
     pub control_flags : PPUControlFlags,
     pub mask_flags : PPUMaskFlags,
-    pub scroll_x : byte,
-    pub scroll_y : byte,
+    pub scroll_x : f32,
+    pub scroll_y : f32,
     pub bus : PPUBus,
     pub oam : PPUOAM,
     pub joystick : Joystick,
@@ -67,8 +67,8 @@ impl PPU
             status_flags: PPUStatusFlags::new(),
             control_flags: PPUControlFlags::new(),
             mask_flags: PPUMaskFlags::new(),
-            scroll_x: 0,
-            scroll_y: 0,
+            scroll_x: 0f32,
+            scroll_y: 0f32,
             bus: PPUBus::new(character_rom),
             oam: PPUOAM::new(),
             joystick: Joystick::new(),
@@ -121,9 +121,9 @@ impl PPU
                 }
 
                 let pipeline = PPURenderingPipeline::start(&ppu, &pattern_tables, &mut canvas);
-                pipeline.render_oam_background_sprites(&mut canvas);
-                pipeline.render_nametable_background(&mut canvas);
-                pipeline.render_oam_foreground_sprites(&mut canvas);
+                pipeline.render_background_sprites_from_oam(&mut canvas);
+                pipeline.render_background_from_nametables(&mut canvas);
+                pipeline.render_foreground_sprites_from_oam(&mut canvas);
                 pipeline.commit_rendering(&mut canvas);
             }
 

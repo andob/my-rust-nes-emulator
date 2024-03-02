@@ -19,6 +19,7 @@ impl ROMParser
     {
         if bytes.len()>=4 && bytes[0]==0x4E && bytes[1]==0x45 && bytes[2]==0x53 && bytes[3]==0x1A
         {
+            //todo parse all INES flags https://www.nesdev.org/wiki/INES
             let header = &bytes[0x00..0x10];
             let mapper = (header[7]&0xF0) | (header[6]>>4);
 

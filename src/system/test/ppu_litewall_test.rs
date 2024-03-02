@@ -2,7 +2,7 @@ use anyhow::Context;
 use crate::codeloc;
 use crate::system::{System, SystemStartArgs};
 
-pub fn test_ppu_with_litewall_test() -> anyhow::Result<()>
+pub fn test_ppu_with_litewall_testrom() -> anyhow::Result<()>
 {
     let rom3_bytes = *include_bytes!("roms/ppu_litewall3_test.nes");
     let mut start_args = SystemStartArgs::with_rom_bytes(Box::new(rom3_bytes)).context(codeloc!())?;

@@ -100,11 +100,12 @@ impl CPU
 
             if cpu.bus.channels.ppu_channels.ppu_is_signaling_that_vblank_has_started()
             {
-               CPUInterrupts::hardware_nmi(cpu);
+                if env.logging_options.is_cpu_opcode_logging_enabled { println!("[CPU] NMI"); }
+                CPUInterrupts::hardware_nmi(cpu);
             }
-
-            if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
+            else if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
             {
+                if env.logging_options.is_cpu_opcode_logging_enabled { println!("[CPU] IRQ"); }
                 CPUInterrupts::hardware_irq(cpu);
             }
         }

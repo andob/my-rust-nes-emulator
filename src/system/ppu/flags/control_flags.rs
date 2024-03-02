@@ -3,13 +3,13 @@ use crate::system::{address, byte};
 #[derive(Eq, PartialEq)]
 pub struct PPUControlFlags
 {
-    pub is_nmi_enabled : bool, //todo use this
+    pub is_nmi_enabled : bool,
     pub should_output_color_on_ext_pins : bool, //todo use this
     pub should_use_16pixel_high_sprites : bool,
-    pub base_pattern_table_address_for_background : address, //todo use this
-    pub base_pattern_table_address_for_foreground : address, //todo use this
-    pub vram_address_increment_amount : byte, //todo use this
-    pub base_nametable_address : address, //todo use this
+    pub base_pattern_table_address_for_background : address,
+    pub base_pattern_table_address_for_foreground : address,
+    pub vram_address_increment_amount : byte,
+    pub base_nametable_address : address,
 }
 
 impl PPUControlFlags

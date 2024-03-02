@@ -1,10 +1,10 @@
-use anyhow::Context;
+use anyhow::{Context, Result};
 use crate::codeloc;
 use crate::system::{System, SystemStartArgs};
 
-pub fn test_ppu_with_physics_testrom() -> anyhow::Result<()>
+pub fn test_ppu_with_scroll_testrom() -> Result<()>
 {
-    let rom_bytes = *include_bytes!("roms/ppu_physics_test.nes");
+    let rom_bytes = *include_bytes!("roms/ppu_scroll_test.nes");
 
     let start_args = SystemStartArgs::with_rom_bytes(Box::new(rom_bytes)).context(codeloc!())?;
     let running_system = System::start(start_args).context(codeloc!())?;

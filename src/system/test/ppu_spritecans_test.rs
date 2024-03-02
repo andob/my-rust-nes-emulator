@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use crate::codeloc;
 use crate::system::{System, SystemStartArgs};
 
-pub fn test_ppu_with_spritecans_test() -> Result<()>
+pub fn test_ppu_with_spritecans_testrom() -> Result<()>
 {
     let rom_bytes = *include_bytes!("roms/ppu_spritecans_test.nes");
 

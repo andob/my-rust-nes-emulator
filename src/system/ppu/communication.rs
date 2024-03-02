@@ -53,8 +53,8 @@ impl PPU
             }
             Ok((CPUToPPUCommTarget::ScrollPosition, values)) =>
             {
-                if ppu.is_second_scroll_write { ppu.scroll_y = values[0]; }
-                else { ppu.scroll_x = values[0]; }
+                if ppu.is_second_scroll_write { ppu.scroll_y = (values[0] as i8) as f32; }
+                else { ppu.scroll_x = (values[0] as i8) as f32; }
                 ppu.is_second_scroll_write = !ppu.is_second_scroll_write;
             }
             Ok((CPUToPPUCommTarget::BusAddress, values)) =>
