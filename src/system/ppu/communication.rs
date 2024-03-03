@@ -84,7 +84,7 @@ impl PPU
             }
             Ok((CPUToPPUCommTarget::Joystick, values)) =>
             {
-                ppu.joystick.set_strobe_enabled(values[0]&1==1);
+                ppu.joystick.set_strobe_enabled(values[0] & 0b00000001 == 1);
             }
             _ => {}
         }

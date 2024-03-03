@@ -1,20 +1,9 @@
 use crate::system::{address, byte};
+use crate::system::ppu::sprites::Sprite;
 
 pub struct PPUOAM
 {
     bytes : Box<[byte]>
-}
-
-#[derive(Eq, PartialEq, Hash)]
-pub struct PPUOAMSpriteDescriptor
-{
-    pub x : byte, //todo how to use this?
-    pub y : byte, //todo how to use this?
-    pub should_use_right_pattern_table : bool, //todo how to use this?
-    pub pattern_table_index : address, //todo how to use this?
-    pub palette_index : byte, //todo how to use this?
-    pub should_flip_horizontally : bool, //todo how to use this?
-    pub should_flip_vertically : bool, //todo how to use this?
 }
 
 impl PPUOAM
@@ -49,7 +38,23 @@ impl PPUOAM
         }
     }
 
-    pub fn get_8pixel_high_background_sprites(&self) -> Vec<PPUOAMSpriteDescriptor>
+    pub fn get_8pixel_high_sprites(&self) -> Vec<Sprite>
+    {
+        let flags_filter = |_flags : byte| true;
+        let pattern_table_index_parser = |data : byte| data as address;
+
+        return self.get_sprites(flags_filter, pattern_table_index_parser);
+    }
+
+    pub fn get_16pixel_high_sprites(&self) -> Vec<Sprite>
+    {
+        let flags_filter = |_flags : byte| true;
+        let pattern_table_index_parser = |data : byte| (data & 0b11111110) as address;
+
+        return self.get_sprites(flags_filter, pattern_table_index_parser);
+    }
+
+    pub fn get_8pixel_high_background_sprites(&self) -> Vec<Sprite>
     {
         let flags_filter = |flags : byte| ((flags & 0b00100000) >> 5) == 1;
         let pattern_table_index_parser = |data : byte| data as address;
@@ -57,7 +62,7 @@ impl PPUOAM
         return self.get_sprites(flags_filter, pattern_table_index_parser);
     }
 
-    pub fn get_16pixel_high_background_sprites(&self) -> Vec<PPUOAMSpriteDescriptor>
+    pub fn get_16pixel_high_background_sprites(&self) -> Vec<Sprite>
     {
         let flags_filter = |flags : byte| ((flags & 0b00100000) >> 5) == 1;
         let pattern_table_index_parser = |data : byte| (data & 0b11111110) as address;
@@ -65,7 +70,7 @@ impl PPUOAM
         return self.get_sprites(flags_filter, pattern_table_index_parser);
     }
 
-    pub fn get_8pixel_high_foreground_sprites(&self) -> Vec<PPUOAMSpriteDescriptor>
+    pub fn get_8pixel_high_foreground_sprites(&self) -> Vec<Sprite>
     {
         let flags_filter = |flags : byte| ((flags & 0b00100000) >> 5) == 0;
         let pattern_table_index_parser = |data : byte| data as address;
@@ -73,7 +78,7 @@ impl PPUOAM
         return self.get_sprites(flags_filter, pattern_table_index_parser);
     }
 
-    pub fn get_16pixel_high_foreground_sprites(&self) -> Vec<PPUOAMSpriteDescriptor>
+    pub fn get_16pixel_high_foreground_sprites(&self) -> Vec<Sprite>
     {
         let flags_filter = |flags : byte| ((flags & 0b00100000) >> 5) == 0;
         let pattern_table_index_parser = |data : byte| (data & 0b11111110) as address;
@@ -81,9 +86,9 @@ impl PPUOAM
         return self.get_sprites(flags_filter, pattern_table_index_parser);
     }
 
-    fn get_sprites(&self, flags_filter : fn(byte) -> bool, pattern_table_index_parser : fn(byte) -> address) -> Vec<PPUOAMSpriteDescriptor>
+    fn get_sprites(&self, flags_filter : fn(byte) -> bool, pattern_table_index_parser : fn(byte) -> address) -> Vec<Sprite>
     {
-        let mut sprites : Vec<PPUOAMSpriteDescriptor> = Vec::new();
+        let mut sprites : Vec<Sprite> = Vec::new();
 
         for index in (0..self.bytes.len()).step_by(4)
         {
@@ -91,7 +96,7 @@ impl PPUOAM
             if flags_filter(flags)
             {
                 let pattern_table_data = self.bytes[index+1];
-                sprites.push(PPUOAMSpriteDescriptor
+                sprites.push(Sprite
                 {
                     x: self.bytes[index+3],
                     y: self.bytes[index],
@@ -100,6 +105,7 @@ impl PPUOAM
                     palette_index: flags & 0b00000011,
                     should_flip_horizontally: (flags & 0b01000000) >> 6 == 1,
                     should_flip_vertically: (flags & 0b10000000) >> 7 == 1,
+                    is_sprite_zero: index==0,
                 });
             }
         }

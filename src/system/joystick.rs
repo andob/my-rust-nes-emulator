@@ -54,14 +54,14 @@ impl Joystick
             pressed_keys: HashSet::new(),
             keymap: hashmap!
             {
-                Keycode::A         => JoystickKeycode::A,
-                Keycode::S         => JoystickKeycode::B,
-                Keycode::Backslash => JoystickKeycode::Select,
-                Keycode::Return    => JoystickKeycode::Start,
-                Keycode::Up        => JoystickKeycode::Up,
-                Keycode::Down      => JoystickKeycode::Down,
-                Keycode::Left      => JoystickKeycode::Left,
-                Keycode::Right     => JoystickKeycode::Right,
+                Keycode::K      => JoystickKeycode::A,
+                Keycode::L      => JoystickKeycode::B,
+                Keycode::Space  => JoystickKeycode::Select,
+                Keycode::Return => JoystickKeycode::Start,
+                Keycode::W      => JoystickKeycode::Up,
+                Keycode::S      => JoystickKeycode::Down,
+                Keycode::A      => JoystickKeycode::Left,
+                Keycode::D      => JoystickKeycode::Right,
             },
         };
     }

@@ -31,3 +31,6 @@ sdl2 = "0.36.0"
 
 # CPAL Cross Platform Audio Library
 cpal = "0.15.2"
+
+# Date/Time library
+chrono = "0.4.34"
