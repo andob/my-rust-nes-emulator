@@ -32,5 +32,14 @@ sdl2 = "0.36.0"
 # CPAL Cross Platform Audio Library
 cpal = "0.15.2"
 
+# Linux API bindings
+nix = "0.28.0"
+
+# Joystick Linux API wrapper
+joydev = "0.3.1"
+
 # Date/Time library
 chrono = "0.4.34"
+
+# ZIP compression library
+zip = "0.6.6"

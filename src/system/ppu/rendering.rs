@@ -8,12 +8,13 @@ use crate::system::ppu::bus::{NAMETABLE0_START_ADDRESS, NAMETABLE1_START_ADDRESS
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::pattern_tables::{PatternTables, TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
 use crate::system::ppu::PPU;
-use crate::system::ppu::sprites::Sprite;
+use crate::system::ppu::sprites::{Sprite, SpriteZeroHitDetector};
 
 pub struct PPURenderingPipeline<'a>
 {
     ppu : &'a mut PPU,
     pattern_tables : &'a PatternTables<'a>,
+    sprite_zero_hit_detector : SpriteZeroHitDetector,
 }
 
 impl <'a> PPURenderingPipeline<'a>
@@ -23,9 +24,11 @@ impl <'a> PPURenderingPipeline<'a>
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
 
-        ppu.sprite_zero_hit_detector.clear();
-
-        return PPURenderingPipeline { ppu, pattern_tables };
+        return PPURenderingPipeline
+        {
+            ppu: ppu, pattern_tables: pattern_tables,
+            sprite_zero_hit_detector: SpriteZeroHitDetector::new(),
+        };
     }
 
     pub fn commit_rendering(self, canvas : &mut WindowCanvas)
@@ -35,17 +38,14 @@ impl <'a> PPURenderingPipeline<'a>
 
     pub fn render_background_from_nametables(&mut self, canvas : &mut WindowCanvas)
     {
-        if self.ppu.mask_flags.should_show_background
-        {
-            let first_nametable_address = self.ppu.control_flags.base_nametable_address;
-            let first_nametable_projection_offset = (0 as address, 0 as address);
-            self.render_background_from_nametable(canvas, first_nametable_address, first_nametable_projection_offset);
+        let first_nametable_address = self.ppu.control_flags.base_nametable_address;
+        let first_nametable_projection_offset = (0 as address, 0 as address);
+        self.render_background_from_nametable(canvas, first_nametable_address, first_nametable_projection_offset);
 
-            let second_nametable_address = if self.ppu.control_flags.base_nametable_address
-                == NAMETABLE0_START_ADDRESS { NAMETABLE1_START_ADDRESS } else { NAMETABLE0_START_ADDRESS };
-            let second_nametable_projection_offset = (NES_DISPLAY_WIDTH, 0 as address);
-            self.render_background_from_nametable(canvas, second_nametable_address, second_nametable_projection_offset);
-        }
+        let second_nametable_address = if self.ppu.control_flags.base_nametable_address
+            == NAMETABLE0_START_ADDRESS { NAMETABLE1_START_ADDRESS } else { NAMETABLE0_START_ADDRESS };
+        let second_nametable_projection_offset = (NES_DISPLAY_WIDTH, 0 as address);
+        self.render_background_from_nametable(canvas, second_nametable_address, second_nametable_projection_offset);
     }
 
     fn render_background_from_nametable(&mut self, canvas : &mut WindowCanvas, nametable_address : address, projection_offset : (address, address))
@@ -78,35 +78,29 @@ impl <'a> PPURenderingPipeline<'a>
                 let coords = Rect::new(scaled_x as i32, scaled_y as i32, scaled_width as u32, scaled_height as u32);
                 canvas.copy(pattern.sdl(), None, Some(coords)).unwrap_or_default();
 
-                self.ppu.sprite_zero_hit_detector.add_background_texture(pattern, unscaled_x as usize, unscaled_y as usize);
+                self.sprite_zero_hit_detector.add_background_texture(pattern, unscaled_x as usize, unscaled_y as usize);
             }
         }
     }
 
     pub fn render_background_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
-        if self.ppu.mask_flags.should_show_sprites
-        {
-            let sprites =
-                if self.ppu.control_flags.should_use_16pixel_high_sprites
-                    { self.ppu.oam.get_16pixel_high_background_sprites() }
-                else { self.ppu.oam.get_8pixel_high_background_sprites() };
+        let sprites =
+            if self.ppu.control_flags.should_use_16pixel_high_sprites
+                { self.ppu.oam.get_16pixel_high_background_sprites() }
+            else { self.ppu.oam.get_8pixel_high_background_sprites() };
 
-            self.render_sprites_from_oam(canvas, sprites);
-        }
+        self.render_sprites_from_oam(canvas, sprites);
     }
 
     pub fn render_foreground_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
-        if self.ppu.mask_flags.should_show_sprites
-        {
-            let sprites =
-                if self.ppu.control_flags.should_use_16pixel_high_sprites
-                    { self.ppu.oam.get_16pixel_high_foreground_sprites() }
-                else { self.ppu.oam.get_8pixel_high_foreground_sprites() };
+        let sprites =
+            if self.ppu.control_flags.should_use_16pixel_high_sprites
+                { self.ppu.oam.get_16pixel_high_foreground_sprites() }
+            else { self.ppu.oam.get_8pixel_high_foreground_sprites() };
 
-            self.render_sprites_from_oam(canvas, sprites);
-        }
+        self.render_sprites_from_oam(canvas, sprites);
     }
 
     fn render_sprites_from_oam(&mut self, canvas : &mut WindowCanvas, sprites : Vec<Sprite>)
@@ -140,7 +134,7 @@ impl <'a> PPURenderingPipeline<'a>
 
                 if !sprite.is_sprite_zero
                 {
-                    self.ppu.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite, top_pattern, bottom_pattern);
+                    self.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite, top_pattern, bottom_pattern);
                 }
             }
         }
@@ -162,7 +156,7 @@ impl <'a> PPURenderingPipeline<'a>
 
                 if !sprite.is_sprite_zero
                 {
-                    self.ppu.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite, pattern);
+                    self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite, pattern);
                 }
             }
         }
@@ -182,7 +176,7 @@ impl <'a> PPURenderingPipeline<'a>
                 { self.pattern_tables.right.get(sprite_zero.pattern_table_index+1) }
             else { self.pattern_tables.left.get(sprite_zero.pattern_table_index+1) };
 
-            self.ppu.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite_zero, top_pattern, bottom_pattern);
+            self.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite_zero, top_pattern, bottom_pattern);
         }
         else
         {
@@ -191,10 +185,10 @@ impl <'a> PPURenderingPipeline<'a>
             let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_foreground;
             let pattern = self.pattern_tables.get(pattern_table_base_address, sprite_zero.pattern_table_index);
 
-            self.ppu.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite_zero, pattern);
+            self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite_zero, pattern);
         }
 
-        self.ppu.status_flags.is_sprite_zero_hit = self.ppu.sprite_zero_hit_detector.was_sprite_zero_hit();
+        self.ppu.status_flags.is_sprite_zero_hit = self.sprite_zero_hit_detector.was_sprite_zero_hit();
 
         if logging_options.is_ppu_sprite_zero_hit_logging_enabled && self.ppu.status_flags.is_sprite_zero_hit
         {

@@ -1,7 +1,9 @@
+use std::path::Path;
 use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use itertools::Itertools;
+use joydev::Device;
 use sdl2::event::{Event, WindowEvent};
 use crate::codeloc;
 use crate::system::{address, byte};
@@ -17,7 +19,6 @@ use crate::system::ppu::metrics::WindowMetrics;
 use crate::system::ppu::oam::PPUOAM;
 use crate::system::ppu::pattern_tables::PatternTables;
 use crate::system::ppu::rendering::PPURenderingPipeline;
-use crate::system::ppu::sprites::SpriteZeroHitDetector;
 use crate::system::ppu_channels::PPUToCPUChannels;
 
 pub mod character_rom;
@@ -47,7 +48,6 @@ pub struct PPU
     pub cpu_channels : PPUToCPUChannels,
     pub window_metrics : WindowMetrics,
     pub clock : PPUClock,
-    pub sprite_zero_hit_detector : SpriteZeroHitDetector,
     is_second_scroll_write : bool,
     first_bus_pointer_write : byte,
     is_second_bus_pointer_write : bool,
@@ -79,7 +79,6 @@ impl PPU
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
             clock: PPUClock::new(),
-            sprite_zero_hit_detector: SpriteZeroHitDetector::new(),
             is_second_scroll_write: false,
             first_bus_pointer_write: 0,
             is_second_bus_pointer_write: false,
@@ -99,8 +98,11 @@ impl PPU
             .position_centered().resizable().opengl().build().context(codeloc!())?;
         let (opengl_driver_index, _) = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap();
         let mut canvas = window.into_canvas().index(opengl_driver_index as u32).build().context(codeloc!())?;
+
         let texture_creator = canvas.texture_creator();
         let mut pattern_tables = PatternTables::new(&texture_creator).context(codeloc!())?;
+
+        let physical_joystick_option = Device::open("/dev/input/js0").ok();
 
         loop
         {
@@ -109,6 +111,16 @@ impl PPU
             let ppu_clock_tick_result = ppu.clock.tick();
             if ppu_clock_tick_result.should_notify_vblank_status_started
             {
+                ppu.status_flags.has_vblank_started = true;
+                if ppu.control_flags.is_nmi_enabled
+                {
+                    ppu.cpu_channels.signal_vblank();
+                }
+            }
+            else if ppu_clock_tick_result.should_notify_vblank_status_ended
+            {
+                ppu.status_flags.has_vblank_started = false;
+
                 if ppu.bus.palette.was_recently_changed()
                 {
                     pattern_tables.left.refresh_textures(&ppu.bus).context(codeloc!())?;
@@ -121,28 +133,26 @@ impl PPU
                 pipeline.render_foreground_sprites_from_oam(&mut canvas);
                 pipeline.detect_sprite_zero_hit(&env.logging_options);
                 pipeline.commit_rendering(&mut canvas);
-
-                ppu.status_flags.has_vblank_started = true;
-                if ppu.control_flags.is_nmi_enabled
-                {
-                    ppu.cpu_channels.signal_vblank();
-                }
-            }
-            else if ppu_clock_tick_result.should_notify_vblank_status_ended
-            {
-                ppu.status_flags.has_vblank_started = false;
             }
 
             ppu.handle_read_commands_from_cpu();
             ppu.handle_write_commands_from_cpu();
 
-            let mut event_pump = sdl.event_pump().map_err(|e|anyhow!(e.clone())).context(codeloc!())?;
-            for event in event_pump.poll_iter()
+            if let Some(physical_joystick) = &physical_joystick_option
+            {
+                while let Ok(event) = physical_joystick.get_event()
+                {
+                    ppu.joystick.on_physical_joystick_event(&event);
+                }
+            }
+
+            let mut sdl_event_pump = sdl.event_pump().map_err(|e|anyhow!(e.clone())).context(codeloc!())?;
+            for event in sdl_event_pump.poll_iter()
             {
                 match event
                 {
-                    Event::KeyDown { keycode: Some(keycode), .. } => { ppu.joystick.on_key_down(keycode); }
-                    Event::KeyUp { keycode: Some(keycode), .. } => { ppu.joystick.on_key_up(keycode); }
+                    Event::KeyDown { keycode: Some(keycode), .. } => { ppu.joystick.on_keyboard_key_down(keycode); }
+                    Event::KeyUp { keycode: Some(keycode), .. } => { ppu.joystick.on_keyboard_key_up(keycode); }
                     Event::Window { win_event: WindowEvent::Resized(w, h), .. } => { ppu.window_metrics.on_window_resized(w, h); }
                     Event::Quit { .. } => { env.is_shutting_down.store(true, Ordering::Relaxed); return Ok(()); }
                     _ => {}

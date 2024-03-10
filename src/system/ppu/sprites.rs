@@ -32,18 +32,7 @@ impl SpriteZeroHitDetector
         };
     }
 
-    pub fn clear(&mut self)
-    {
-        for y in 0..NES_DISPLAY_HEIGHT as usize
-        {
-            for x in 0..NES_DISPLAY_WIDTH as usize
-            {
-                self.screen_pixel_matrix[y][x] = 0;
-            }
-        }
-    }
-
-    fn aggregate_texture(&mut self, texture : &Texture, texture_destination_x : usize, texture_destination_y : usize, aggregate : fn(color, color) -> color)
+    fn aggregate_texture(&mut self, texture : &Texture, texture_destination_x : usize, texture_destination_y : usize)
     {
         for texture_source_y in 0..TILE_WIDTH_IN_PIXELS as usize
         {
@@ -56,10 +45,8 @@ impl SpriteZeroHitDetector
                 if screen_destination_x>=0 && screen_destination_x<NES_DISPLAY_WIDTH as usize &&
                    screen_destination_y>=0 && screen_destination_y<NES_DISPLAY_HEIGHT as usize
                 {
-                    let old_monochrome_pixel = self.screen_pixel_matrix[screen_destination_y][screen_destination_x];
-                    let new_monochrome_pixel = if pixel!=0 {1} else {0} as color;
-
-                    self.screen_pixel_matrix[screen_destination_y][screen_destination_x] = aggregate(old_monochrome_pixel, new_monochrome_pixel);
+                    let monochrome_pixel = if pixel!=0 {1} else {0} as color;
+                    self.screen_pixel_matrix[screen_destination_y][screen_destination_x] += monochrome_pixel;
                 }
             }
         }
@@ -67,7 +54,7 @@ impl SpriteZeroHitDetector
 
     pub fn add_background_texture(&mut self, texture : &Texture, texture_destination_x : usize, texture_destination_y : usize)
     {
-        self.aggregate_texture(texture, texture_destination_x, texture_destination_y, |x,y|x|y);
+        self.aggregate_texture(texture, texture_destination_x, texture_destination_y);
     }
 
     pub fn add_16pixel_high_sprite(&mut self, sprite: Sprite, top_texture : &Texture, bottom_texture : &Texture)
@@ -78,28 +65,28 @@ impl SpriteZeroHitDetector
         if sprite.is_sprite_zero
         {
             //todo implement should_flip_horizontally and should_flip_vertically
-            self.aggregate_texture(top_texture, sprite.x as usize, top_texture_y, |x,y|x+y);
-            self.aggregate_texture(bottom_texture, sprite.x as usize, bottom_texture_y, |x,y|x+y);
+            self.aggregate_texture(top_texture, sprite.x as usize, top_texture_y);
+            self.aggregate_texture(bottom_texture, sprite.x as usize, bottom_texture_y);
         }
         else
         {
             //todo implement should_flip_horizontally and should_flip_vertically
-            self.aggregate_texture(top_texture, sprite.x as usize, top_texture_y, |x,y|x|y);
-            self.aggregate_texture(bottom_texture, sprite.x as usize, bottom_texture_y, |x,y|x|y);
+            self.aggregate_texture(top_texture, sprite.x as usize, top_texture_y);
+            self.aggregate_texture(bottom_texture, sprite.x as usize, bottom_texture_y);
         }
     }
 
-    pub fn add_8pixel_high_sprite(&mut self, sprite: Sprite, texture : &Texture)
+    pub fn add_8pixel_high_sprite(&mut self, sprite : Sprite, texture : &Texture)
     {
         if sprite.is_sprite_zero
         {
             //todo implement should_flip_horizontally and should_flip_vertically
-            self.aggregate_texture(texture, sprite.x as usize, sprite.y as usize, |x,y|x+y);
+            self.aggregate_texture(texture, sprite.x as usize, sprite.y as usize);
         }
         else
         {
             //todo implement should_flip_horizontally and should_flip_vertically
-            self.aggregate_texture(texture, sprite.x as usize, sprite.y as usize, |x,y|x|y);
+            self.aggregate_texture(texture, sprite.x as usize, sprite.y as usize);
         }
     }
 
