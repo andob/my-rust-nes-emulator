@@ -89,8 +89,6 @@ impl CPUToPPUChannels
     pub fn read(&mut self, address : address) -> byte
     {
         let target = CPUToPPUCommTarget::from_address(address);
-        //todo if we read bus data, it will become very, very slow. why?
-        if target==CPUToPPUCommTarget::BusData { return 0; }
         self.read_command_sender.send(target).unwrap_or_default();
         return self.read_command_result_receiver.recv().unwrap_or_default();
     }

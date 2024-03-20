@@ -60,7 +60,7 @@ impl <'a> PPURenderingPipeline<'a>
 
         for y_index in 0..number_of_columns
         {
-            for x_index in 0..=number_of_rows
+            for x_index in 0..number_of_rows
             {
                 let nametable_address = nametable_address + y_index * number_of_rows + x_index;
                 let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_background;

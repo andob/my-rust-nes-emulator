@@ -27,8 +27,8 @@ mod apu;
 mod joystick;
 
 pub type byte = u8;
-pub type mapper = u8;
 pub type address = u16;
+pub type mapper = u8;
 pub type color = u32;
 
 pub const DEFAULT_CHANNEL_SIZE : usize = 32;

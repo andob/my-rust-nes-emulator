@@ -1,4 +1,3 @@
-use std::path::Path;
 use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
