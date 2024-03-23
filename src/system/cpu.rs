@@ -92,7 +92,7 @@ impl CPU
                 println!("[CPU] {} {:#06X} {:#04X}", opcode.name, address, value);
             }
 
-            (opcode.lambda)(cpu, address, value);
+            (opcode.lambda)(cpu, &opcode.addressing_mode, address, value);
 
             env.debugger.notify_cpu_state_to_watchers(cpu);
 
@@ -106,7 +106,7 @@ impl CPU
             else if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
             {
                 if env.logging_options.is_cpu_opcode_logging_enabled { println!("[CPU] IRQ"); }
-                CPUInterrupts::software_irq(cpu);
+                CPUInterrupts::hardware_irq(cpu);
             }
         }
     }

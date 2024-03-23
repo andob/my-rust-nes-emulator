@@ -3,7 +3,7 @@ use crate::system::cpu::CPU;
 use crate::system::{address, byte};
 use crate::system::cpu::opcodes::Opcode;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum AddressingMode
 {
     Implied,

@@ -45,10 +45,10 @@ pub struct SystemStartArgs
     character_rom : CharacterROM,
     logging_options : LoggingOptions,
     cpu_debugger : CPUDebugger,
-    should_disable_audio : bool,
-    should_disable_video : bool,
+    pub should_disable_audio : bool,
+    pub should_disable_video : bool,
     should_disable_interrupt_vectors : bool,
-    window_title : String,
+    pub window_title : String,
 }
 
 impl SystemStartArgs

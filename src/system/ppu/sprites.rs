@@ -42,8 +42,8 @@ impl SpriteZeroHitDetector
 
                 let screen_destination_x = texture_destination_x + texture_source_x;
                 let screen_destination_y = texture_destination_y + texture_source_y;
-                if screen_destination_x>=0 && screen_destination_x<NES_DISPLAY_WIDTH as usize &&
-                   screen_destination_y>=0 && screen_destination_y<NES_DISPLAY_HEIGHT as usize
+                if screen_destination_x<NES_DISPLAY_WIDTH as usize &&
+                   screen_destination_y<NES_DISPLAY_HEIGHT as usize
                 {
                     let monochrome_pixel = if pixel!=0 {1} else {0} as color;
                     self.screen_pixel_matrix[screen_destination_y][screen_destination_x] += monochrome_pixel;
