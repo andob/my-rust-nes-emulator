@@ -48,6 +48,7 @@ pub struct SystemStartArgs
     should_disable_audio : bool,
     should_disable_video : bool,
     should_disable_interrupt_vectors : bool,
+    window_title : String,
 }
 
 impl SystemStartArgs
@@ -65,6 +66,7 @@ impl SystemStartArgs
             should_disable_audio: false,
             should_disable_video: false,
             should_disable_interrupt_vectors: false,
+            window_title: String::from("Emulator"),
         });
     }
 }
@@ -91,6 +93,7 @@ impl System
             logging_options: args.logging_options.clone(),
             is_shutting_down: is_shutting_down.clone(),
             should_disable_video: args.should_disable_video,
+            window_title: args.window_title,
         };
 
         let apu_run_environment = APURunEnvironment

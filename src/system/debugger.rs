@@ -3,6 +3,7 @@ use flume::{Receiver, Sender};
 use crate::system::{address, byte};
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::CPU;
+use crate::system::cpu::stack::CPUStack;
 
 #[macro_export]
 macro_rules! codeloc
@@ -29,7 +30,7 @@ impl LoggingOptions
             is_cpu_opcode_logging_enabled: false,
             is_cpu_to_ppu_channel_logging_enabled: false,
             is_cpu_to_apu_channel_logging_enabled: false,
-            is_ppu_sprite_zero_hit_logging_enabled: true,
+            is_ppu_sprite_zero_hit_logging_enabled: false,
             is_system_threads_shutdown_logging_enabled: true,
         };
     }
@@ -56,7 +57,7 @@ impl From<&CPU> for CPUState
             A: cpu.A,
             X: cpu.X,
             Y: cpu.Y,
-            stack_pointer: cpu.stack.get_pointer(),
+            stack_pointer: CPUStack::get_pointer(cpu),
             program_counter: cpu.program_counter,
             flags: cpu.flags.clone(),
         }

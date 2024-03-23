@@ -1,13 +1,13 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use crate::system::cpu::flags::CPUFlags;
-use crate::system::cpu::opcodes::build_opcodes_slice;
-use crate::system::cpu::stack::CPUStack;
+
 use crate::system::{address, byte, CPUDebugger};
 use crate::system::apu_channels::CPUToAPUChannels;
-use crate::system::cpu::clock::CPUClock;
 use crate::system::cpu::bus::CPUBus;
+use crate::system::cpu::clock::CPUClock;
+use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::interrupts::CPUInterrupts;
+use crate::system::cpu::opcodes::build_opcodes_slice;
 use crate::system::cpu::program_iterator::CPUProgramIterator;
 use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::debugger::LoggingOptions;
@@ -15,7 +15,7 @@ use crate::system::ppu_channels::CPUToPPUChannels;
 
 mod opcodes;
 mod program_iterator;
-mod stack;
+pub mod stack;
 pub mod flags;
 mod clock;
 mod interrupts;
@@ -29,8 +29,8 @@ pub struct CPU
     pub A : byte, //Accumulator register
     pub X : byte, //X index register
     pub Y : byte, //Y index register
-    pub stack : CPUStack,
     pub clock : CPUClock,
+    pub stack_pointer : address,
     pub program_counter : address,
     pub flags : CPUFlags,
     pub bus : CPUBus,
@@ -60,8 +60,8 @@ impl CPU
             A: 0,
             X: 0,
             Y: 0,
-            stack: CPUStack::new(),
             clock: CPUClock::new(),
+            stack_pointer: 0x0200,
             program_counter: program_rom.program_start_address,
             flags: CPUFlags::from_byte(0),
             bus: CPUBus::new(program_rom, channels),
@@ -106,7 +106,7 @@ impl CPU
             else if cpu.bus.channels.apu_channels.is_apu_signaling_that_frame_has_ended()
             {
                 if env.logging_options.is_cpu_opcode_logging_enabled { println!("[CPU] IRQ"); }
-                CPUInterrupts::hardware_irq(cpu);
+                CPUInterrupts::software_irq(cpu);
             }
         }
     }

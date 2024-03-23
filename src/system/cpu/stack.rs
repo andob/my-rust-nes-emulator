@@ -2,30 +2,20 @@ use crate::address_from_high_low;
 use crate::system::{address, byte};
 use crate::system::cpu::CPU;
 
-const STACK_TOP_ADDRESS : address = 0x0200;
+const STACK_TOP_ADDRESS : address = 0x01FF;
 const STACK_BOTTOM_ADDRESS : address = 0x0100;
 
-pub struct CPUStack
-{
-    pointer : address
-}
-
+pub struct CPUStack {}
 impl CPUStack
 {
-    pub fn new() -> CPUStack
-    {
-        return CPUStack { pointer: STACK_TOP_ADDRESS };
-    }
-
     pub fn push_byte(cpu : &mut CPU, value : byte)
     {
-        cpu.bus.put(cpu.stack.pointer, value);
+        cpu.bus.put(cpu.stack_pointer, value);
 
-        let new_stack_pointer = cpu.stack.pointer-1;
-        if new_stack_pointer >= STACK_BOTTOM_ADDRESS && new_stack_pointer <= STACK_TOP_ADDRESS
-        {
-            cpu.stack.pointer = new_stack_pointer;
-        }
+        cpu.stack_pointer =
+            if cpu.stack_pointer-1 >= STACK_BOTTOM_ADDRESS
+                { cpu.stack_pointer-1 }
+            else { STACK_TOP_ADDRESS }
     }
 
     pub fn push_address(cpu : &mut CPU, address : address)
@@ -34,41 +24,36 @@ impl CPUStack
         CPUStack::push_byte(cpu, (address&0xFF) as byte);
     }
 
-    pub fn pop_byte(cpu : &mut CPU) -> Option<byte>
+    pub fn pop_byte(cpu : &mut CPU) -> byte
     {
-        let new_stack_pointer = cpu.stack.pointer+1;
-        if new_stack_pointer >= STACK_BOTTOM_ADDRESS && new_stack_pointer <= STACK_TOP_ADDRESS
-        {
-            let value = cpu.bus.get(new_stack_pointer);
-            cpu.stack.pointer = new_stack_pointer;
-            return Some(value);
-        }
-        return None;
+        cpu.stack_pointer =
+            if cpu.stack_pointer+1 <= STACK_TOP_ADDRESS
+                { cpu.stack_pointer+1 }
+            else { STACK_BOTTOM_ADDRESS };
+
+        let value = cpu.bus.get(cpu.stack_pointer);
+        return value;
     }
 
-    pub fn pop_address(cpu : &mut CPU) -> Option<address>
+    pub fn pop_address(cpu : &mut CPU) -> address
     {
-        if let Some(low) = CPUStack::pop_byte(cpu)
-        {
-            if let Some(high) = CPUStack::pop_byte(cpu)
-            {
-                return Some(address_from_high_low!(high, low));
-            }
-        }
-        return None;
+        let low = CPUStack::pop_byte(cpu);
+        let high = CPUStack::pop_byte(cpu);
+        let address = address_from_high_low!(high, low);
+        return address;
     }
 
-    pub fn get_pointer(self : &CPUStack) -> byte
+    pub fn get_pointer(cpu : &CPU) -> byte
     {
-        return (self.pointer & 0x00FF) as byte;
+        return (cpu.stack_pointer & 0x00FF) as byte;
     }
 
-    pub fn set_pointer(self : &mut CPUStack, raw_pointer : byte)
+    pub fn set_pointer(cpu : &mut CPU, raw_pointer : byte)
     {
         let new_pointer = STACK_BOTTOM_ADDRESS | raw_pointer as address;
         if new_pointer >= STACK_BOTTOM_ADDRESS && new_pointer <= STACK_TOP_ADDRESS
         {
-            self.pointer = new_pointer;
+            cpu.stack_pointer = new_pointer;
         }
     }
 }

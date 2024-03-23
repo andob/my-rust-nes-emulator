@@ -1,5 +1,6 @@
 use anyhow::Result;
 use maplit2::hashmap;
+use crate::system::test::cpu_blargg_test::test_cpu_with_blargg_testrom;
 use crate::system::test::cpu_kevtris_nestest::test_cpu_with_kevtris_nestest;
 use crate::system::test::joystick_test::test_joystick;
 use crate::system::test::ppu_testsroms::{*};
@@ -7,6 +8,7 @@ use crate::system::test::ppu_testsroms::{*};
 mod cpu_kevtris_nestest;
 mod ppu_testsroms;
 mod joystick_test;
+mod cpu_blargg_test;
 
 pub struct Test {}
 
@@ -17,6 +19,7 @@ impl Test
         let tests = hashmap!
         {
             "cpu_kevtris_nestest" => test_cpu_with_kevtris_nestest as fn() -> Result<()>,
+            "cpu_blargg_test" => test_cpu_with_blargg_testrom,
             "ppu_blocks_test" => test_ppu_with_blocks_testrom,
             "ppu_litewall_test" => test_ppu_with_litewall_testrom,
             "ppu_physics_test" => test_ppu_with_physics_testrom,

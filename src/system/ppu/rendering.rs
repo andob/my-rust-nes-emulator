@@ -67,8 +67,9 @@ impl <'a> PPURenderingPipeline<'a>
                 let pattern_table_index = self.ppu.bus.get(nametable_address) as address;
                 let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index);
 
-                let unscaled_x = (((x_index + projection_offset_x) as f32) - self.ppu.scroll_x) * (TILE_WIDTH_IN_PIXELS as f32);
-                let unscaled_y = (((y_index + projection_offset_y) as f32) - self.ppu.scroll_y) * (TILE_HEIGHT_IN_PIXELS as f32);
+                //todo implement scrolling
+                let unscaled_x = (((x_index + projection_offset_x) as f32) /*- self.ppu.scroll_x*/) * (TILE_WIDTH_IN_PIXELS as f32);
+                let unscaled_y = (((y_index + projection_offset_y) as f32) /*- self.ppu.scroll_y*/) * (TILE_HEIGHT_IN_PIXELS as f32);
 
                 let scaled_width = (TILE_WIDTH_IN_PIXELS as f32) * scale_x;
                 let scaled_height = (TILE_HEIGHT_IN_PIXELS as f32) * scale_y;

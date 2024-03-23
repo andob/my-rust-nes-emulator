@@ -59,6 +59,7 @@ pub struct PPURunEnvironment
     pub logging_options : LoggingOptions,
     pub is_shutting_down : Arc<AtomicBool>,
     pub should_disable_video : bool,
+    pub window_title : String,
 }
 
 impl PPU
@@ -93,7 +94,7 @@ impl PPU
 
         let sdl = sdl2::init().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
         let video_subsystem = sdl.video().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
-        let window = video_subsystem.window("Emulator", ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
+        let window = video_subsystem.window(env.window_title.as_str(), ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
             .position_centered().resizable().opengl().build().context(codeloc!())?;
         let (opengl_driver_index, _) = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap();
         let mut canvas = window.into_canvas().index(opengl_driver_index as u32).build().context(codeloc!())?;
@@ -110,16 +111,6 @@ impl PPU
             let ppu_clock_tick_result = ppu.clock.tick();
             if ppu_clock_tick_result.should_notify_vblank_status_started
             {
-                ppu.status_flags.has_vblank_started = true;
-                if ppu.control_flags.is_nmi_enabled
-                {
-                    ppu.cpu_channels.signal_vblank();
-                }
-            }
-            else if ppu_clock_tick_result.should_notify_vblank_status_ended
-            {
-                ppu.status_flags.has_vblank_started = false;
-
                 if ppu.bus.palette.was_recently_changed()
                 {
                     pattern_tables.left.refresh_textures(&ppu.bus).context(codeloc!())?;
@@ -132,6 +123,16 @@ impl PPU
                 pipeline.render_foreground_sprites_from_oam(&mut canvas);
                 pipeline.detect_sprite_zero_hit(&env.logging_options);
                 pipeline.commit_rendering(&mut canvas);
+
+                ppu.status_flags.has_vblank_started = true;
+                if ppu.control_flags.is_nmi_enabled
+                {
+                    ppu.cpu_channels.signal_vblank();
+                }
+            }
+            else if ppu_clock_tick_result.should_notify_vblank_status_ended
+            {
+                ppu.status_flags.has_vblank_started = false;
             }
 
             ppu.handle_read_commands_from_cpu();
