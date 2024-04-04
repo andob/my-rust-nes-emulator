@@ -121,3 +121,25 @@ impl CPUDebugger
         }
     }
 }
+
+pub struct PPUDebugger
+{
+    pub should_render_background : bool,
+    pub should_render_sprites : bool,
+    pub should_debug_pattern_table : bool,
+    pub should_debug_sprite_zero_hit : bool, //todo implement this
+}
+
+impl PPUDebugger
+{
+    pub fn new() -> PPUDebugger
+    {
+        return PPUDebugger
+        {
+            should_render_background: true,
+            should_render_sprites: true,
+            should_debug_pattern_table: false,
+            should_debug_sprite_zero_hit: false,
+        };
+    }
+}

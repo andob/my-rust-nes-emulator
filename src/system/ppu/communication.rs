@@ -22,7 +22,7 @@ impl PPU
                 CPUToPPUCommTarget::OAMData => ppu.oam.get(ppu.oam_pointer),
                 CPUToPPUCommTarget::BusAddress => ppu.bus_pointer as byte,
                 CPUToPPUCommTarget::BusData => ppu.bus.get(ppu.bus_pointer),
-                CPUToPPUCommTarget::Joystick => ppu.joystick.read_pressed_key(),
+                CPUToPPUCommTarget::Joystick => ppu.input_subsystem.get_pressed_key(),
                 _ => 0,
             });
         }
@@ -84,7 +84,7 @@ impl PPU
             }
             Ok((CPUToPPUCommTarget::Joystick, values)) =>
             {
-                ppu.joystick.set_strobe_enabled(values[0] & 0b00000001 == 1);
+                ppu.input_subsystem.set_strobe_enabled(values[0] & 0b00000001 == 1);
             }
             _ => {}
         }

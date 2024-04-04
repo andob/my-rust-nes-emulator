@@ -10,7 +10,7 @@ use crate::codeloc;
 use crate::system::apu::{APU, APURunEnvironment};
 use crate::system::cpu::{CPU, CPUChannelsToOtherSystems, CPURunEnvironment};
 use crate::system::cpu::program_rom::ProgramROM;
-use crate::system::debugger::{CPUDebugger, LoggingOptions};
+use crate::system::debugger::{CPUDebugger, LoggingOptions, PPUDebugger};
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::rom::ROMParser;
@@ -24,7 +24,7 @@ mod rom;
 pub mod apu_channels;
 pub mod ppu_channels;
 mod apu;
-mod joystick;
+mod input;
 
 pub type byte = u8;
 pub type address = u16;
@@ -45,6 +45,7 @@ pub struct SystemStartArgs
     character_rom : CharacterROM,
     logging_options : LoggingOptions,
     cpu_debugger : CPUDebugger,
+    ppu_debugger : PPUDebugger,
     pub should_disable_audio : bool,
     pub should_disable_video : bool,
     should_disable_interrupt_vectors : bool,
@@ -63,6 +64,7 @@ impl SystemStartArgs
             character_rom: parsed_rom.character_rom,
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
+            ppu_debugger: PPUDebugger::new(),
             should_disable_audio: false,
             should_disable_video: false,
             should_disable_interrupt_vectors: false,
@@ -90,6 +92,7 @@ impl System
 
         let ppu_run_environment = PPURunEnvironment
         {
+            debugger: args.ppu_debugger,
             logging_options: args.logging_options.clone(),
             is_shutting_down: is_shutting_down.clone(),
             should_disable_video: args.should_disable_video,

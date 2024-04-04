@@ -93,7 +93,6 @@ impl SpriteZeroHitDetector
     pub fn was_sprite_zero_hit(&self) -> bool
     {
         //todo it's not working properly... make sprite zero hit test pass
-        //todo the entire process is a bit laggy. use SIMD instructions?
         for y in 0..NES_DISPLAY_HEIGHT as usize
         {
             for x in 0..NES_DISPLAY_WIDTH as usize

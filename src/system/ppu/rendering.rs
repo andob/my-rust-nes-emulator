@@ -7,26 +7,33 @@ use crate::system::debugger::LoggingOptions;
 use crate::system::ppu::bus::{NAMETABLE0_START_ADDRESS, NAMETABLE1_START_ADDRESS};
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::pattern_tables::{PatternTables, TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
-use crate::system::ppu::PPU;
+use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::ppu::sprites::{Sprite, SpriteZeroHitDetector};
 
 pub struct PPURenderingPipeline<'a>
 {
     ppu : &'a mut PPU,
+    env : &'a PPURunEnvironment,
     pattern_tables : &'a PatternTables<'a>,
     sprite_zero_hit_detector : SpriteZeroHitDetector,
 }
 
 impl <'a> PPURenderingPipeline<'a>
 {
-    pub fn start(ppu : &'a mut PPU, pattern_tables : &'a PatternTables, canvas : &mut WindowCanvas) -> PPURenderingPipeline<'a>
+    pub fn start
+    (
+        ppu : &'a mut PPU,
+        env : &'a PPURunEnvironment,
+        pattern_tables : &'a PatternTables,
+        canvas : &mut WindowCanvas,
+    ) -> PPURenderingPipeline<'a>
     {
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
 
         return PPURenderingPipeline
         {
-            ppu: ppu, pattern_tables: pattern_tables,
+            ppu: ppu, env: env, pattern_tables: pattern_tables,
             sprite_zero_hit_detector: SpriteZeroHitDetector::new(),
         };
     }
@@ -38,6 +45,8 @@ impl <'a> PPURenderingPipeline<'a>
 
     pub fn render_background_from_nametables(&mut self, canvas : &mut WindowCanvas)
     {
+        if !self.env.debugger.should_render_background { return; }
+
         let first_nametable_address = self.ppu.control_flags.base_nametable_address;
         let first_nametable_projection_offset = (0 as address, 0 as address);
         self.render_background_from_nametable(canvas, first_nametable_address, first_nametable_projection_offset);
@@ -62,9 +71,11 @@ impl <'a> PPURenderingPipeline<'a>
         {
             for x_index in 0..number_of_rows
             {
-                let nametable_address = nametable_address + y_index * number_of_rows + x_index;
+                let pattern_table_index =
+                    if self.env.debugger.should_debug_pattern_table { y_index * number_of_rows + x_index }
+                    else { self.ppu.bus.get(nametable_address + y_index * number_of_rows + x_index) as address };
+
                 let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_background;
-                let pattern_table_index = self.ppu.bus.get(nametable_address) as address;
                 let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index);
 
                 //todo implement scrolling
@@ -86,6 +97,8 @@ impl <'a> PPURenderingPipeline<'a>
 
     pub fn render_background_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
+        if !self.env.debugger.should_render_sprites { return; }
+
         let sprites =
             if self.ppu.control_flags.should_use_16pixel_high_sprites
                 { self.ppu.oam.get_16pixel_high_background_sprites() }
@@ -96,6 +109,8 @@ impl <'a> PPURenderingPipeline<'a>
 
     pub fn render_foreground_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
+        if !self.env.debugger.should_render_sprites { return; }
+
         let sprites =
             if self.ppu.control_flags.should_use_16pixel_high_sprites
                 { self.ppu.oam.get_16pixel_high_foreground_sprites() }

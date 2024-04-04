@@ -2,12 +2,11 @@ use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use itertools::Itertools;
-use joydev::Device;
 use sdl2::event::{Event, WindowEvent};
 use crate::codeloc;
 use crate::system::{address, byte};
-use crate::system::debugger::LoggingOptions;
-use crate::system::joystick::Joystick;
+use crate::system::debugger::{LoggingOptions, PPUDebugger};
+use crate::system::input::InputSubsystem;
 use crate::system::ppu::bus::PPUBus;
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::clock::PPUClock;
@@ -43,7 +42,7 @@ pub struct PPU
     pub scroll_y : f32,
     pub bus : PPUBus,
     pub oam : PPUOAM,
-    pub joystick : Joystick,
+    pub input_subsystem : InputSubsystem,
     pub cpu_channels : PPUToCPUChannels,
     pub window_metrics : WindowMetrics,
     pub clock : PPUClock,
@@ -56,6 +55,7 @@ pub struct PPU
 
 pub struct PPURunEnvironment
 {
+    pub debugger : PPUDebugger,
     pub logging_options : LoggingOptions,
     pub is_shutting_down : Arc<AtomicBool>,
     pub should_disable_video : bool,
@@ -75,7 +75,7 @@ impl PPU
             scroll_y: 0f32,
             bus: PPUBus::new(character_rom),
             oam: PPUOAM::new(),
-            joystick: Joystick::new(),
+            input_subsystem: InputSubsystem::new(),
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
             clock: PPUClock::new(),
@@ -87,7 +87,7 @@ impl PPU
         };
     }
 
-    pub fn run(self : &mut PPU, env : PPURunEnvironment) -> Result<()>
+    pub fn run(self : &mut PPU, mut env : PPURunEnvironment) -> Result<()>
     {
         if env.should_disable_video { return Ok(()) }
         let mut ppu = self;
@@ -102,8 +102,6 @@ impl PPU
         let texture_creator = canvas.texture_creator();
         let mut pattern_tables = PatternTables::new(&texture_creator).context(codeloc!())?;
 
-        let physical_joystick_option = Device::open("/dev/input/js0").ok();
-
         loop
         {
             if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()) }
@@ -117,7 +115,7 @@ impl PPU
                     pattern_tables.right.refresh_textures(&ppu.bus).context(codeloc!())?;
                 }
 
-                let mut pipeline = PPURenderingPipeline::start(&mut ppu, &pattern_tables, &mut canvas);
+                let mut pipeline = PPURenderingPipeline::start(&mut ppu, &env, &pattern_tables, &mut canvas);
                 pipeline.render_background_sprites_from_oam(&mut canvas);
                 pipeline.render_background_from_nametables(&mut canvas);
                 pipeline.render_foreground_sprites_from_oam(&mut canvas);
@@ -138,21 +136,15 @@ impl PPU
             ppu.handle_read_commands_from_cpu();
             ppu.handle_write_commands_from_cpu();
 
-            if let Some(physical_joystick) = &physical_joystick_option
-            {
-                while let Ok(event) = physical_joystick.get_event()
-                {
-                    ppu.joystick.on_physical_joystick_event(&event);
-                }
-            }
+            ppu.input_subsystem.handle_physical_joystick_events();
 
             let mut sdl_event_pump = sdl.event_pump().map_err(|e|anyhow!(e.clone())).context(codeloc!())?;
             for event in sdl_event_pump.poll_iter()
             {
                 match event
                 {
-                    Event::KeyDown { keycode: Some(keycode), .. } => { ppu.joystick.on_keyboard_key_down(keycode); }
-                    Event::KeyUp { keycode: Some(keycode), .. } => { ppu.joystick.on_keyboard_key_up(keycode); }
+                    Event::KeyDown { keycode: Some(keycode), .. } => { ppu.input_subsystem.handle_physical_keyboard_keydown(keycode, &mut env); }
+                    Event::KeyUp { keycode: Some(keycode), .. } => { ppu.input_subsystem.handle_physical_keyboard_keyup(keycode, &mut env); }
                     Event::Window { win_event: WindowEvent::Resized(w, h), .. } => { ppu.window_metrics.on_window_resized(w, h); }
                     Event::Quit { .. } => { env.is_shutting_down.store(true, Ordering::Relaxed); return Ok(()); }
                     _ => {}

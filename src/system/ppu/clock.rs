@@ -19,6 +19,7 @@ impl PPUClock
     pub fn new() -> PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
+        //todo how to keep constant FPS?
         let number_of_visible_scan_lines = 240u64;
         let number_of_hidden_scan_lines = 22u64;
         let factor = 30u64;
