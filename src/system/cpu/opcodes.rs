@@ -1,11 +1,10 @@
-use crate::address_from_high_low;
 use crate::system::cpu::CPU;
 use crate::system::cpu::flags::CPUFlags;
 use crate::system::cpu::program_iterator::AddressingMode;
 use crate::system::cpu::stack::CPUStack;
 use crate::system::cpu::clock::ExpectedDuration;
 use crate::system::cpu::interrupts::CPUInterrupts;
-use crate::system::{address, byte};
+use crate::system::{address, address_from_high_low, byte};
 
 pub struct Opcode
 {
@@ -304,7 +303,8 @@ pub fn build_opcodes_slice() -> Box<[Opcode]>
     return opcodes.into_boxed_slice();
 }
 
-macro_rules! isneg { ($arg : expr) => { ($arg)>0x7F } }
+#[inline]
+fn isneg(arg : byte) -> bool { arg>0x7F }
 
 fn adc(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte)
 {
@@ -314,8 +314,8 @@ fn adc(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     let old_accumulator = cpu.A;
     cpu.A = new_value;
     cpu.flags.carry = did_first_overflow_occur | did_second_overflow_occur;
-    cpu.flags.overflow = (!(isneg!(old_accumulator) ^ isneg!(value))) && (isneg!(old_accumulator) ^ isneg!(new_value));
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.overflow = (!(isneg(old_accumulator) ^ isneg(value))) && (isneg(old_accumulator) ^ isneg(new_value));
+    cpu.flags.negative = isneg(new_value);
     cpu.flags.zero = new_value==0;
 }
 
@@ -325,7 +325,7 @@ fn and(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     let new_value = cpu.A & value;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn asl(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -334,7 +334,7 @@ fn asl(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
     cpu.flags.carry = (value & 0b10000000) >> 7 == 1;
     let new_value = value << 1;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
     if *mode == AddressingMode::Implied { cpu.A = new_value; }
     else { cpu.bus.put(address, new_value); }
 }
@@ -350,7 +350,7 @@ fn bit(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
 fn branch(cpu : &mut CPU, signed_offset : byte)
 {
     let abs_offset = ((signed_offset as i8) as i16).abs() as address;
-    if isneg!(signed_offset)
+    if isneg(signed_offset)
     {
         cpu.program_counter = cpu.program_counter.wrapping_sub(abs_offset);
         cpu.clock.notify_branch_taken();
@@ -476,7 +476,7 @@ fn dec(cpu : &mut CPU, _mode : &AddressingMode, address : address, value : byte)
     let new_value = value.wrapping_sub(1);
     cpu.bus.put(address, new_value);
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn eor(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte)
@@ -485,7 +485,7 @@ fn eor(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     let new_value = cpu.A ^ value;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn clc(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -536,7 +536,7 @@ fn inc(cpu : &mut CPU, _mode : &AddressingMode, address : address, value : byte)
     let new_value = value.wrapping_add(1);
     cpu.bus.put(address, new_value);
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn jmp(cpu : &mut CPU, _mode : &AddressingMode, address : address, _value : byte)
@@ -557,7 +557,7 @@ fn lda(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     //load memory into Accumulator
     cpu.A = value;
     cpu.flags.zero = value==0;
-    cpu.flags.negative = isneg!(value);
+    cpu.flags.negative = isneg(value);
 }
 
 fn ldx(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte)
@@ -565,7 +565,7 @@ fn ldx(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     //load memory into register X
     cpu.X = value;
     cpu.flags.zero = value==0;
-    cpu.flags.negative = isneg!(value);
+    cpu.flags.negative = isneg(value);
 }
 
 fn ldy(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte)
@@ -573,7 +573,7 @@ fn ldy(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     //load memory into register Y
     cpu.Y = value;
     cpu.flags.zero = value==0;
-    cpu.flags.negative = isneg!(value);
+    cpu.flags.negative = isneg(value);
 }
 
 fn lsr(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -582,7 +582,7 @@ fn lsr(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
     cpu.flags.carry = value & 0b00000001 == 1;
     let new_value = value >> 1;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
     if *mode == AddressingMode::Implied { cpu.A = new_value; }
     else { cpu.bus.put(address, new_value); }
 }
@@ -598,7 +598,7 @@ fn ora(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     let new_value = cpu.A | value;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn tax(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -607,7 +607,7 @@ fn tax(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.A;
     cpu.X = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn txa(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -616,7 +616,7 @@ fn txa(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.X;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn dex(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -625,7 +625,7 @@ fn dex(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.X.wrapping_sub(1);
     cpu.X = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn inx(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -634,7 +634,7 @@ fn inx(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.X.wrapping_add(1);
     cpu.X = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn tay(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -643,7 +643,7 @@ fn tay(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.A;
     cpu.Y = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn tya(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -652,7 +652,7 @@ fn tya(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.Y;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn dey(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -661,7 +661,7 @@ fn dey(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.Y.wrapping_sub(1);
     cpu.Y = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn iny(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -670,7 +670,7 @@ fn iny(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = cpu.Y.wrapping_add(1);
     cpu.Y = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn rol(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -681,7 +681,7 @@ fn rol(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
     cpu.flags.carry = bit_to_remove == 1;
     let new_value = (value << 1) | bit_to_push;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
     if *mode == AddressingMode::Implied { cpu.A = new_value; }
     else { cpu.bus.put(address, new_value); }
 }
@@ -694,7 +694,7 @@ fn ror(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
     cpu.flags.carry = bit_to_pop==1;
     let new_value = (value >> 1) | (bit_to_push << 7);
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
     if *mode == AddressingMode::Implied { cpu.A = new_value; }
     else { cpu.bus.put(address, new_value); }
 }
@@ -726,8 +726,8 @@ fn sbc(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte
     let old_accumulator = cpu.A;
     cpu.A = new_value;
     cpu.flags.carry = !(did_first_overflow_occur | did_second_overflow_occur);
-    cpu.flags.overflow = (isneg!(old_accumulator) ^ isneg!(value)) && (isneg!(old_accumulator) ^ isneg!(new_value));
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.overflow = (isneg(old_accumulator) ^ isneg(value)) && (isneg(old_accumulator) ^ isneg(new_value));
+    cpu.flags.negative = isneg(new_value);
     cpu.flags.zero = new_value==0;
 }
 
@@ -749,7 +749,7 @@ fn tsx(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = CPUStack::get_pointer(cpu);
     cpu.X = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn pha(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -764,7 +764,7 @@ fn pla(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byt
     let new_value = CPUStack::pop_byte(cpu);
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn php(cpu : &mut CPU, _mode : &AddressingMode, _address : address, _value : byte)
@@ -804,8 +804,8 @@ fn unofficial_aac(cpu : &mut CPU, _mode : &AddressingMode, _address : address, v
     let new_value = cpu.A & value;
     cpu.A = new_value;
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
-    cpu.flags.carry = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
+    cpu.flags.carry = isneg(new_value);
 }
 
 fn unofficial_aax(cpu : &mut CPU, _mode : &AddressingMode, address : address, _value : byte)
@@ -855,7 +855,7 @@ fn unofficial_axs(cpu : &mut CPU, _mode : &AddressingMode, _address : address, v
     let new_value_8b = (new_value_16b & 0xFF) as u8;
     cpu.X = new_value_8b;
     cpu.flags.zero = new_value_8b==0;
-    cpu.flags.negative = isneg!(new_value_8b);
+    cpu.flags.negative = isneg(new_value_8b);
     cpu.flags.carry = ((new_value_16b >> 8) & 0x01) ^ 0x01 == 0x01;
 }
 
@@ -895,7 +895,7 @@ fn unofficial_lar(cpu : &mut CPU, _mode : &AddressingMode, _address : address, v
     cpu.X = new_value;
     CPUStack::set_pointer(cpu, new_value);
     cpu.flags.zero = new_value==0;
-    cpu.flags.negative = isneg!(new_value);
+    cpu.flags.negative = isneg(new_value);
 }
 
 fn unofficial_lax(cpu : &mut CPU, _mode : &AddressingMode, _address : address, value : byte)
@@ -904,7 +904,7 @@ fn unofficial_lax(cpu : &mut CPU, _mode : &AddressingMode, _address : address, v
     cpu.A = value;
     cpu.X = value;
     cpu.flags.zero = value==0;
-    cpu.flags.negative = isneg!(value);
+    cpu.flags.negative = isneg(value);
 }
 
 fn unofficial_rla(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -915,7 +915,7 @@ fn unofficial_rla(cpu : &mut CPU, mode : &AddressingMode, address : address, val
     let new_accumulator = cpu.A & new_value;
     cpu.A = new_accumulator;
     cpu.flags.zero = new_accumulator==0;
-    cpu.flags.negative = isneg!(new_accumulator);
+    cpu.flags.negative = isneg(new_accumulator);
 }
 
 fn unofficial_rra(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -940,7 +940,7 @@ fn unofficial_slo(cpu : &mut CPU, mode : &AddressingMode, address : address, val
     let new_accumulator = cpu.A | new_value;
     cpu.A = new_accumulator;
     cpu.flags.zero = new_accumulator==0;
-    cpu.flags.negative = isneg!(new_accumulator);
+    cpu.flags.negative = isneg(new_accumulator);
 }
 
 fn unofficial_sre(cpu : &mut CPU, mode : &AddressingMode, address : address, value : byte)
@@ -951,7 +951,7 @@ fn unofficial_sre(cpu : &mut CPU, mode : &AddressingMode, address : address, val
     let new_accumulator = cpu.A ^ new_value;
     cpu.A = new_accumulator;
     cpu.flags.zero = new_accumulator==0;
-    cpu.flags.negative = isneg!(new_accumulator);
+    cpu.flags.negative = isneg(new_accumulator);
 }
 
 fn unofficial_sxa(cpu : &mut CPU, _mode : &AddressingMode, address : address, _value : byte)
@@ -960,7 +960,7 @@ fn unofficial_sxa(cpu : &mut CPU, _mode : &AddressingMode, address : address, _v
     let high = (address >> 8) as byte;
     let low = (address & 0xFF) as byte;
     let new_value = cpu.X & (high.wrapping_add(1));
-    let new_address = address_from_high_low!(new_value, low);
+    let new_address = address_from_high_low(new_value, low);
     cpu.bus.put(new_address, new_value);
 }
 
@@ -970,7 +970,7 @@ fn unofficial_sya(cpu : &mut CPU, _mode : &AddressingMode, address : address, _v
     let high = (address >> 8) as byte;
     let low = (address & 0xFF) as byte;
     let new_value = cpu.Y & (high.wrapping_add(1));
-    let new_address = address_from_high_low!(new_value, low);
+    let new_address = address_from_high_low(new_value, low);
     cpu.bus.put(new_address, new_value);
 }
 

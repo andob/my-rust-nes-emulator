@@ -46,6 +46,7 @@ pub struct PPU
     pub cpu_channels : PPUToCPUChannels,
     pub window_metrics : WindowMetrics,
     pub clock : PPUClock,
+    pub frame_id : usize,
     is_second_scroll_write : bool,
     first_bus_pointer_write : byte,
     is_second_bus_pointer_write : bool,
@@ -79,6 +80,7 @@ impl PPU
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
             clock: PPUClock::new(),
+            frame_id: 0,
             is_second_scroll_write: false,
             first_bus_pointer_write: 0,
             is_second_bus_pointer_write: false,
@@ -131,6 +133,7 @@ impl PPU
             else if ppu_clock_tick_result.should_notify_vblank_status_ended
             {
                 ppu.status_flags.has_vblank_started = false;
+                ppu.frame_id = ppu.frame_id.wrapping_add(1);
             }
 
             ppu.handle_read_commands_from_cpu();

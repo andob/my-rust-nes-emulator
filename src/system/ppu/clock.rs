@@ -22,7 +22,7 @@ impl PPUClock
         //todo how to keep constant FPS?
         let number_of_visible_scan_lines = 240u64;
         let number_of_hidden_scan_lines = 22u64;
-        let factor = 30u64;
+        let factor = 40u64;
 
         return PPUClock
         {

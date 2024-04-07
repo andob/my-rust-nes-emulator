@@ -1,5 +1,4 @@
-use crate::address_from_high_low;
-use crate::system::{address, byte};
+use crate::system::{address, address_from_high_low, byte};
 use crate::system::ppu::flags::control_flags::PPUControlFlags;
 use crate::system::ppu::flags::mask_flags::PPUMaskFlags;
 use crate::system::ppu::PPU;
@@ -61,9 +60,7 @@ impl PPU
             {
                 if ppu.is_second_bus_pointer_write
                 {
-                    let high = ppu.first_bus_pointer_write;
-                    let low = values[0] as address;
-                    ppu.bus_pointer = address_from_high_low!(high, low);
+                    ppu.bus_pointer = address_from_high_low(ppu.first_bus_pointer_write, values[0]);
                     ppu.is_second_bus_pointer_write = false;
                 }
                 else

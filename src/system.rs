@@ -33,10 +33,10 @@ pub type color = u32;
 
 pub const DEFAULT_CHANNEL_SIZE : usize = 32;
 
-#[macro_export]
-macro_rules! address_from_high_low
+#[inline]
+pub fn address_from_high_low(high : byte, low : byte) -> address
 {
-    ($high : expr, $low : expr) => ((($high as address)<<8)|($low as address))
+    return ((high as address) << 8) | (low as address);
 }
 
 pub struct SystemStartArgs

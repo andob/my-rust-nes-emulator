@@ -22,10 +22,10 @@ impl PPUMaskFlags
             should_emphasize_blue: false,
             should_emphasize_green: false,
             should_emphasize_red: false,
-            should_show_sprites: false,
-            should_show_background: false,
-            should_show_sprites_in_leftmost_part_of_screen: false,
-            should_show_background_in_leftmost_part_of_screen: false,
+            should_show_sprites: true,
+            should_show_background: true,
+            should_show_sprites_in_leftmost_part_of_screen: true,
+            should_show_background_in_leftmost_part_of_screen: true,
             should_render_as_grayscale: false,
         }
     }
@@ -36,7 +36,7 @@ impl PPUMaskFlags
              | ((self.should_emphasize_green                            as byte) << 6)
              | ((self.should_emphasize_red                              as byte) << 5)
              | ((self.should_show_sprites                               as byte) << 4)
-             | ((self.should_show_background as byte) << 3)
+             | ((self.should_show_background                            as byte) << 3)
              | ((self.should_show_sprites_in_leftmost_part_of_screen    as byte) << 2)
              | ((self.should_show_background_in_leftmost_part_of_screen as byte) << 1)
              | ((self.should_render_as_grayscale                        as byte) << 0);

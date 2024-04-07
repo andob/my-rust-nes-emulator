@@ -35,6 +35,7 @@ impl InputSubsystem
                 Keycode::F5 => { env.debugger.should_render_background = true; }
                 Keycode::F6 => { env.debugger.should_render_sprites = true; }
                 Keycode::F7 => { env.debugger.should_debug_pattern_table = false; }
+                Keycode::F12 => { env.debugger.should_debug_sprite_zero_hit = !env.debugger.should_debug_sprite_zero_hit; }
                 _ => {}
             }
         }

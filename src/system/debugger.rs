@@ -30,7 +30,7 @@ impl LoggingOptions
             is_cpu_opcode_logging_enabled: false,
             is_cpu_to_ppu_channel_logging_enabled: false,
             is_cpu_to_apu_channel_logging_enabled: false,
-            is_ppu_sprite_zero_hit_logging_enabled: false,
+            is_ppu_sprite_zero_hit_logging_enabled: true,
             is_system_threads_shutdown_logging_enabled: true,
         };
     }
@@ -127,7 +127,7 @@ pub struct PPUDebugger
     pub should_render_background : bool,
     pub should_render_sprites : bool,
     pub should_debug_pattern_table : bool,
-    pub should_debug_sprite_zero_hit : bool, //todo implement this
+    pub should_debug_sprite_zero_hit : bool,
 }
 
 impl PPUDebugger
@@ -139,7 +139,7 @@ impl PPUDebugger
             should_render_background: true,
             should_render_sprites: true,
             should_debug_pattern_table: false,
-            should_debug_sprite_zero_hit: false,
+            should_debug_sprite_zero_hit: true,
         };
     }
 }

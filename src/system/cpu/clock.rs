@@ -34,7 +34,7 @@ impl CPUClock
         return CPUClock
         {
             cycle_count: 0,
-            cycle_count_threshold: 4000,
+            cycle_count_threshold: 6000,
             sleep_duration: Duration::from_millis(1),
             was_page_boundary_crossed: false,
             was_branch_taken: false,

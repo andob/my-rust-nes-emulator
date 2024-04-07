@@ -1,5 +1,4 @@
-use crate::address_from_high_low;
-use crate::system::address;
+use crate::system::{address, address_from_high_low};
 use crate::system::cpu::CPU;
 use crate::system::cpu::stack::CPUStack;
 
@@ -75,7 +74,7 @@ impl CPUInterrupts
         {
             let low = cpu.bus.program_rom.get(interrupt_vector);
             let high = cpu.bus.program_rom.get(interrupt_vector+1);
-            let interrupt_handler_address = address_from_high_low!(high, low);
+            let interrupt_handler_address = address_from_high_low(high, low);
             cpu.program_counter = interrupt_handler_address;
         }
     }

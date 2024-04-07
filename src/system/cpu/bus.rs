@@ -1,5 +1,4 @@
-use crate::address_from_high_low;
-use crate::system::{address, byte};
+use crate::system::{address, address_from_high_low, byte};
 use crate::system::cpu::CPUChannelsToOtherSystems;
 use crate::system::cpu::program_rom::ProgramROM;
 use crate::system::cpu::ram::RAM;
@@ -75,8 +74,8 @@ impl CPUBus
         }
         else if raw_address == PPU_OAM_DMA_ADDRESS
         {
-            let start_address = address_from_high_low!(value, 0x00);
-            let end_address = address_from_high_low!(value, 0xFF);
+            let start_address = address_from_high_low(value, 0x00);
+            let end_address = address_from_high_low(value, 0xFF);
             let values_to_copy = (start_address..=end_address)
                 .map(|address| self.get(address)).collect::<Vec<byte>>().into_boxed_slice();
             let channel_address = self.convert_raw_address_to_ppu_channel_address(raw_address);

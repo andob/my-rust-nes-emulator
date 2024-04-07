@@ -8,7 +8,8 @@ use crate::system::ppu::bus::{NAMETABLE0_START_ADDRESS, NAMETABLE1_START_ADDRESS
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::pattern_tables::{PatternTables, TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
 use crate::system::ppu::{PPU, PPURunEnvironment};
-use crate::system::ppu::sprites::{Sprite, SpriteZeroHitDetector};
+use crate::system::ppu::sprites::Sprite;
+use crate::system::ppu::sprites::sprite_zero_hit_detector::SpriteZeroHitDetector;
 
 pub struct PPURenderingPipeline<'a>
 {
@@ -31,11 +32,8 @@ impl <'a> PPURenderingPipeline<'a>
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
 
-        return PPURenderingPipeline
-        {
-            ppu: ppu, env: env, pattern_tables: pattern_tables,
-            sprite_zero_hit_detector: SpriteZeroHitDetector::new(),
-        };
+        let sprite_zero_hit_detector = SpriteZeroHitDetector::new(ppu);
+        return PPURenderingPipeline { ppu, env, pattern_tables, sprite_zero_hit_detector };
     }
 
     pub fn commit_rendering(self, canvas : &mut WindowCanvas)
@@ -46,6 +44,7 @@ impl <'a> PPURenderingPipeline<'a>
     pub fn render_background_from_nametables(&mut self, canvas : &mut WindowCanvas)
     {
         if !self.env.debugger.should_render_background { return; }
+        // if !self.ppu.mask_flags.should_show_background { return; }
 
         let first_nametable_address = self.ppu.control_flags.base_nametable_address;
         let first_nametable_projection_offset = (0 as address, 0 as address);
@@ -98,6 +97,7 @@ impl <'a> PPURenderingPipeline<'a>
     pub fn render_background_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
         if !self.env.debugger.should_render_sprites { return; }
+        if !self.ppu.mask_flags.should_show_sprites { return; }
 
         let sprites =
             if self.ppu.control_flags.should_use_16pixel_high_sprites
@@ -110,6 +110,7 @@ impl <'a> PPURenderingPipeline<'a>
     pub fn render_foreground_sprites_from_oam(&mut self, canvas : &mut WindowCanvas)
     {
         if !self.env.debugger.should_render_sprites { return; }
+        if !self.ppu.mask_flags.should_show_sprites { return; }
 
         let sprites =
             if self.ppu.control_flags.should_use_16pixel_high_sprites
@@ -202,6 +203,11 @@ impl <'a> PPURenderingPipeline<'a>
             let pattern = self.pattern_tables.get(pattern_table_base_address, sprite_zero.pattern_table_index);
 
             self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite_zero, pattern);
+        }
+
+        if self.env.debugger.should_debug_sprite_zero_hit
+        {
+            self.sprite_zero_hit_detector.debug();
         }
 
         self.ppu.status_flags.is_sprite_zero_hit = self.sprite_zero_hit_detector.was_sprite_zero_hit();

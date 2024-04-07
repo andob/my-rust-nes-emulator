@@ -1,5 +1,4 @@
-use crate::address_from_high_low;
-use crate::system::{address, byte};
+use crate::system::{address, address_from_high_low, byte};
 use crate::system::cpu::CPU;
 
 const STACK_TOP_ADDRESS : address = 0x01FF;
@@ -39,7 +38,7 @@ impl CPUStack
     {
         let low = CPUStack::pop_byte(cpu);
         let high = CPUStack::pop_byte(cpu);
-        let address = address_from_high_low!(high, low);
+        let address = address_from_high_low(high, low);
         return address;
     }
 

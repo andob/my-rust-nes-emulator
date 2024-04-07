@@ -6,7 +6,8 @@ use crate::codeloc;
 use crate::system::{address, byte, color};
 use crate::system::ppu::bus::{PATTERN_TABLE0_END_ADDRESS, PATTERN_TABLE0_START_ADDRESS, PATTERN_TABLE1_END_ADDRESS, PATTERN_TABLE1_START_ADDRESS, PPUBus};
 use crate::system::ppu::character_rom::CharacterROM;
-use crate::system::ppu::textures::{texture_pixel_matrix, Texture};
+use crate::system::ppu::textures::Texture;
+use crate::system::ppu::textures::texture_pixel_matrix::TexturePixelMatrix;
 
 const NUMBER_OF_TILES_IN_PATTERN_TABLE : address = 255;
 const TILE_SIZE_IN_BYTES : address = 16;
@@ -45,7 +46,7 @@ impl <'a> PatternTable<'a>
     {
         for tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
         {
-            self.textures[tile_index as usize].with_lock(|pixels : &mut texture_pixel_matrix|
+            self.textures[tile_index as usize].with_lock(|pixels : &mut TexturePixelMatrix|
             {
                 let tile_address = self.address_range.start + tile_index * TILE_SIZE_IN_BYTES;
                 let (plane1, plane2) = ppu_bus.character_rom.get_tile_planes(tile_address);
@@ -57,13 +58,15 @@ impl <'a> PatternTable<'a>
                         let plane1_pixel = (plane1[y as usize] >> (TILE_WIDTH_IN_PIXELS-x-1)) & 0b00000001 != 0;
                         let plane2_pixel = (plane2[y as usize] >> (TILE_WIDTH_IN_PIXELS-x-1)) & 0b00000001 != 0;
 
-                        pixels[y as usize][x as usize] = match (plane1_pixel, plane2_pixel)
+                        let pixel = match (plane1_pixel, plane2_pixel)
                         {
                             (true, true) => ppu_bus.palette.get_color(3 as address),
                             (true, false) => ppu_bus.palette.get_color(1 as address),
                             (false, true) => ppu_bus.palette.get_color(2 as address),
                             (false, false) => 0 as color, //transparent
                         };
+
+                        pixels.put(x as usize, y as usize, pixel);
                     }
                 }
             }).context(codeloc!())?;

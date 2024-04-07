@@ -1,6 +1,5 @@
-use crate::address_from_high_low;
 use crate::system::cpu::CPU;
-use crate::system::{address, byte};
+use crate::system::{address, address_from_high_low, byte};
 use crate::system::cpu::opcodes::Opcode;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -105,7 +104,7 @@ impl CPUProgramIterator
                 else { low_address.wrapping_add(1) } as address;
                 let low = cpu.bus.get(low_address);
                 let high = cpu.bus.get(high_address);
-                let address = address_from_high_low!(high, low);
+                let address = address_from_high_low(high, low);
                 let value = cpu.bus.get(address as address);
                 return (address, value);
             }
@@ -116,7 +115,7 @@ impl CPUProgramIterator
                 let base_address = base_base_address.wrapping_add(cpu.X as byte);
                 let low = cpu.bus.get(base_address as address);
                 let high = cpu.bus.get(base_address.wrapping_add(1) as address);
-                let address = address_from_high_low!(high, low);
+                let address = address_from_high_low(high, low);
                 if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
                     cpu.clock.notify_page_boundary_crossed();
@@ -131,7 +130,7 @@ impl CPUProgramIterator
                 let base_base_address = CPUProgramIterator::next_byte_from_rom(cpu);
                 let low = cpu.bus.get(base_base_address as address);
                 let high = cpu.bus.get(base_base_address.wrapping_add(1) as address);
-                let base_address = address_from_high_low!(high, low);
+                let base_address = address_from_high_low(high, low);
                 let address = base_address.wrapping_add(cpu.Y as address);
                 if cpu.program_counter/RAM_PAGE_SIZE != address/RAM_PAGE_SIZE
                 {
@@ -166,7 +165,7 @@ impl CPUProgramIterator
     {
         let low = cpu.bus.get(cpu.program_counter);
         let high = cpu.bus.get(cpu.program_counter+1);
-        let address = address_from_high_low!(high, low);
+        let address = address_from_high_low(high, low);
         cpu.program_counter = cpu.program_counter.wrapping_add(2);
         return address;
     }
