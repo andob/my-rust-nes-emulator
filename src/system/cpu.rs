@@ -23,6 +23,7 @@ pub mod bus;
 pub mod program_rom;
 mod ram;
 
+//todo what is the CPU state on boot?
 #[allow(non_snake_case)]
 pub struct CPU
 {

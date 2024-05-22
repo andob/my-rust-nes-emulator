@@ -88,9 +88,9 @@ impl SpriteZeroHitDetector
 
         unsafe
         {
-            let command = format!("nano {}", file_name);
-            let command_cstring = CString::new(command).unwrap();
-            libc::system(command_cstring.as_ptr() as *const c_char);
+            // let command = format!("nano {}", file_name);
+            // let command_cstring = CString::new(command).unwrap();
+            // libc::system(command_cstring.as_ptr() as *const c_char);
         }
     }
 

@@ -11,7 +11,6 @@ mod joystick_test;
 mod cpu_blargg_test;
 
 pub struct Test {}
-
 impl Test
 {
     pub fn run_test(&self, test_name : String) -> Result<()>

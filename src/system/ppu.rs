@@ -33,6 +33,7 @@ mod clock;
 mod sprites;
 mod textures;
 
+//todo what is the CPU state on boot?
 pub struct PPU
 {
     pub status_flags : PPUStatusFlags,

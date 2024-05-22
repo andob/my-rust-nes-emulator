@@ -1,5 +1,3 @@
-extern crate core;
-
 use std::{env, fs, panic, process};
 use anyhow::{Context, Result};
 use crate::system::{System, SystemStartArgs};

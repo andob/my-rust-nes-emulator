@@ -17,15 +17,16 @@ impl PPUMaskFlags
 {
     pub fn new() -> PPUMaskFlags
     {
+        //todo should be all false on power on
         return PPUMaskFlags
         {
             should_emphasize_blue: false,
             should_emphasize_green: false,
             should_emphasize_red: false,
-            should_show_sprites: true,
-            should_show_background: true,
-            should_show_sprites_in_leftmost_part_of_screen: true,
-            should_show_background_in_leftmost_part_of_screen: true,
+            should_show_sprites: false,
+            should_show_background: false,
+            should_show_sprites_in_leftmost_part_of_screen: false,
+            should_show_background_in_leftmost_part_of_screen: false,
             should_render_as_grayscale: false,
         }
     }
