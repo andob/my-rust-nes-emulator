@@ -1,5 +1,5 @@
 use flume::{Receiver, Sender, TryRecvError};
-use crate::system::{address, byte, DEFAULT_CHANNEL_SIZE, System};
+use crate::system::{address, byte, System};
 use crate::system::debugger::LoggingOptions;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -125,10 +125,10 @@ impl System
 {
     pub fn create_apu_system_channels(logging_options : LoggingOptions) -> (CPUToAPUChannels, APUToCPUChannels)
     {
-        let (write_command_sender, write_command_receiver) = flume::bounded::<(CPUToAPUCommTarget, byte)>(DEFAULT_CHANNEL_SIZE);
-        let (read_command_sender, read_command_receiver) = flume::bounded::<CPUToAPUCommTarget>(DEFAULT_CHANNEL_SIZE);
-        let (read_command_result_sender, read_command_result_receiver) = flume::bounded::<byte>(DEFAULT_CHANNEL_SIZE);
-        let (frame_end_signal_sender, frame_end_signal_receiver) = flume::bounded::<()>(DEFAULT_CHANNEL_SIZE);
+        let (write_command_sender, write_command_receiver) = flume::unbounded::<(CPUToAPUCommTarget, byte)>();
+        let (read_command_sender, read_command_receiver) = flume::unbounded::<CPUToAPUCommTarget>();
+        let (read_command_result_sender, read_command_result_receiver) = flume::unbounded::<byte>();
+        let (frame_end_signal_sender, frame_end_signal_receiver) = flume::unbounded::<()>();
 
         let cpu_to_apu_channels = CPUToAPUChannels
         {

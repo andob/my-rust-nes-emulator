@@ -18,7 +18,7 @@ impl PPUControlFlags
     {
         return PPUControlFlags
         {
-            is_nmi_enabled: false,
+            is_nmi_enabled: true,
             should_output_color_on_ext_pins: false,
             should_use_16pixel_high_sprites: false,
             base_pattern_table_address_for_background: 0,

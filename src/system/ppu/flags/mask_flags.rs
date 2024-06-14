@@ -17,7 +17,6 @@ impl PPUMaskFlags
 {
     pub fn new() -> PPUMaskFlags
     {
-        //todo should be all false on power on
         return PPUMaskFlags
         {
             should_emphasize_blue: false,

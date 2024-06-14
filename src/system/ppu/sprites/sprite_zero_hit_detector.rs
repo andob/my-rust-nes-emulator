@@ -1,8 +1,8 @@
+use nix::libc;
 use std::ffi::{c_char, CString};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
-use nix::libc;
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::pattern_tables::TILE_HEIGHT_IN_PIXELS;
 use crate::system::ppu::PPU;
@@ -12,23 +12,26 @@ use crate::system::ppu::textures::Texture;
 
 pub struct SpriteZeroHitDetector
 {
-    frame_id : usize,
-    tmp : bool,
+    //todo optimize with SIMD instructions
     background_pixel_hit_matrix : PixelHitMatrix,
     foreground_pixel_hit_matrix : PixelHitMatrix,
 }
 
 impl SpriteZeroHitDetector
 {
-    pub fn new(ppu : &mut PPU) -> SpriteZeroHitDetector
+    pub fn new() -> SpriteZeroHitDetector
     {
         return SpriteZeroHitDetector
         {
-            frame_id: ppu.frame_id,
-            tmp: ppu.mask_flags.should_show_background, //todo remove this
             background_pixel_hit_matrix: PixelHitMatrix::new(),
             foreground_pixel_hit_matrix: PixelHitMatrix::new(),
         };
+    }
+
+    pub fn clear(&mut self)
+    {
+        self.background_pixel_hit_matrix.clear();
+        self.foreground_pixel_hit_matrix.clear();
     }
 
     pub fn add_background_texture(&mut self, texture : &Texture, texture_destination_x : usize, texture_destination_y : usize)
@@ -81,28 +84,40 @@ impl SpriteZeroHitDetector
         pixel_hit_matrix.aggregate(&texture_pixel_matrix, sprite.x as usize, sprite.y as usize);
     }
 
-    pub fn debug(&self)
+    pub fn debug(&self, ppu : &mut PPU)
     {
-        let file_name = format!("./tmp/{}", self.frame_id);
-        self.debug_dump_to_file(&file_name);
+        let file_name = String::from("sprite_zero_hit_debug.txt");
+        self.debug_dump_to_file(&file_name, ppu);
 
         unsafe
         {
-            // let command = format!("nano {}", file_name);
-            // let command_cstring = CString::new(command).unwrap();
-            // libc::system(command_cstring.as_ptr() as *const c_char);
+            //todo uncomment
+            let command = format!("konsole -e nano {}", file_name);
+            let command_cstring = CString::new(command).unwrap();
+            libc::system(command_cstring.as_ptr() as *const c_char);
         }
     }
 
-    fn debug_dump_to_file(&self, file_name : &String)
+    fn debug_dump_to_file(&self, file_name : &String, ppu : &mut PPU)
     {
         let mut file = OpenOptions::new()
             .create_new(!Path::new(file_name).exists())
             .write(true).append(false)
             .open(file_name).unwrap();
 
-        write!(file, "BACKGROUND: (should_show={})\n{}\n", self.tmp, self.background_pixel_hit_matrix.to_string()).unwrap();
-        write!(file, "FOREGROUND:\n{}\n", self.foreground_pixel_hit_matrix.to_string()).unwrap();
+        write!(file, "SPRITE ZERO HIT: expected={}, actual={}\n",
+           self.was_sprite_zero_hit(), ppu.status_flags.is_sprite_zero_hit
+        ).unwrap();
+
+        write!(file, "BACKGROUND: show={}\n{}\n",
+           ppu.mask_flags.should_show_background,
+           self.background_pixel_hit_matrix.to_string()
+        ).unwrap();
+
+        write!(file, "FOREGROUND: show={}\n{}\n",
+           ppu.mask_flags.should_show_sprites,
+           self.foreground_pixel_hit_matrix.to_string()
+        ).unwrap();
     }
 
     pub fn was_sprite_zero_hit(&self) -> bool

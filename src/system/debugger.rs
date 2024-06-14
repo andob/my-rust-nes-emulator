@@ -30,7 +30,7 @@ impl LoggingOptions
             is_cpu_opcode_logging_enabled: false,
             is_cpu_to_ppu_channel_logging_enabled: false,
             is_cpu_to_apu_channel_logging_enabled: false,
-            is_ppu_sprite_zero_hit_logging_enabled: true,
+            is_ppu_sprite_zero_hit_logging_enabled: false,
             is_system_threads_shutdown_logging_enabled: true,
         };
     }

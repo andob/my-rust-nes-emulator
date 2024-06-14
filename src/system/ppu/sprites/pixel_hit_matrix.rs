@@ -4,8 +4,8 @@ use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
 use crate::system::ppu::pattern_tables::{TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
 use crate::system::ppu::textures::texture_pixel_matrix::TexturePixelMatrix;
 
-const PIXEL_HIT_MATRIX_DEFAULT_HORIZONTAL_PADDING : usize = 0; //todo (TILE_WIDTH_IN_PIXELS as usize) * 2;
-const PIXEL_HIT_MATRIX_DEFAULT_VERTICAL_PADDING : usize = 0; //todo (TILE_HEIGHT_IN_PIXELS as usize) * 2;
+const PIXEL_HIT_MATRIX_DEFAULT_HORIZONTAL_PADDING : usize = (TILE_WIDTH_IN_PIXELS as usize) * 2;
+const PIXEL_HIT_MATRIX_DEFAULT_VERTICAL_PADDING : usize = (TILE_HEIGHT_IN_PIXELS as usize) * 2;
 
 const PIXEL_HIT_MATRIX_DEFAULT_WIDTH : usize = (NES_DISPLAY_WIDTH as usize) + PIXEL_HIT_MATRIX_DEFAULT_HORIZONTAL_PADDING * 2;
 const PIXEL_HIT_MATRIX_DEFAULT_HEIGHT : usize = (NES_DISPLAY_HEIGHT as usize) + PIXEL_HIT_MATRIX_DEFAULT_VERTICAL_PADDING * 2;
@@ -98,6 +98,14 @@ impl PixelHitMatrix
 
                 self.put(transposed_pixel_x, transposed_pixel_y, new_value);
             }
+        }
+    }
+
+    pub fn clear(&mut self)
+    {
+        for i in 0..self.pixels.len()
+        {
+            self.pixels[i] = false;
         }
     }
 }

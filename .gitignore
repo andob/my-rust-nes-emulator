@@ -6,3 +6,5 @@ Cargo.lock
 *.pdb
 .tmp
 tmp/
+.sprite_zero_hit_debug.txt.swp
+sprite_zero_hit_debug.txt

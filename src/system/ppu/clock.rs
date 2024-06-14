@@ -1,17 +1,43 @@
 
+const NUMBER_OF_VISIBLE_SCAN_LINES : usize = 240;
+const NUMBER_OF_SCAN_LINES : usize = 262;
+
+const VBLANK_START_SCANLINE_NUMBER : usize = 241;
+const VBLANK_END_SCANLINE_NUMBER : usize = 262;
+
 pub struct PPUClock
 {
-    cycle_count : u64,
-    cycle_count_vblank_start_threshold : u64,
-    cycle_count_vblank_end_threshold : u64,
-    was_vblank_start_notified : bool,
-    was_vblank_end_notified : bool,
+    cycle_count : usize,
+    scanline_cycle_count_threshold : usize,
+    current_scanline : usize,
 }
 
 pub struct PPUClockTickResult
 {
-    pub should_notify_vblank_status_started : bool,
-    pub should_notify_vblank_status_ended : bool,
+    pub should_notify_scanline_reached : bool,
+    pub scanline_number : usize,
+}
+
+impl PPUClockTickResult
+{
+    pub fn should_notify_vblank_started(&self) -> bool
+    {
+        return self.should_notify_scanline_reached &&
+            self.scanline_number == VBLANK_START_SCANLINE_NUMBER;
+    }
+
+    pub fn should_notify_vblank_ended(&self) -> bool
+    {
+        return self.should_notify_scanline_reached &&
+            self.scanline_number == VBLANK_END_SCANLINE_NUMBER;
+    }
+
+    pub fn should_check_sprite_zero_hit_mid_frame(&self) -> bool
+    {
+        return self.should_notify_scanline_reached &&
+                self.scanline_number <= NUMBER_OF_VISIBLE_SCAN_LINES &&
+                self.scanline_number % 100 == 0
+    }
 }
 
 impl PPUClock
@@ -20,77 +46,39 @@ impl PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
         //todo how to keep constant FPS?
-        let number_of_visible_scan_lines = 240u64;
-        let number_of_hidden_scan_lines = 22u64;
-        let factor = 40u64;
-
         return PPUClock
         {
             cycle_count: 0,
-            cycle_count_vblank_start_threshold: (number_of_visible_scan_lines+1)*factor,
-            cycle_count_vblank_end_threshold: (number_of_visible_scan_lines+number_of_hidden_scan_lines+1)*factor,
-            was_vblank_start_notified: false,
-            was_vblank_end_notified: false,
-        }
+            scanline_cycle_count_threshold: 40,
+            current_scanline: 0,
+        };
     }
 
     pub fn tick(&mut self) -> PPUClockTickResult
     {
         self.cycle_count += 1;
 
-        return if self.cycle_count >= self.cycle_count_vblank_end_threshold
+        if self.cycle_count >= self.scanline_cycle_count_threshold
         {
-            if !self.was_vblank_end_notified
-            {
-                self.was_vblank_end_notified = true;
+            self.cycle_count = 0;
+            self.current_scanline += 1;
 
-                PPUClockTickResult
-                {
-                    should_notify_vblank_status_started: false,
-                    should_notify_vblank_status_ended: true,
-                }
-            }
-            else
+            if self.current_scanline > VBLANK_END_SCANLINE_NUMBER
             {
-                self.cycle_count = 0;
-                self.was_vblank_start_notified = false;
-                self.was_vblank_end_notified = false;
-
-                PPUClockTickResult
-                {
-                    should_notify_vblank_status_started: false,
-                    should_notify_vblank_status_ended: false,
-                }
+                self.current_scanline = 0;
             }
+
+            return PPUClockTickResult
+            {
+                should_notify_scanline_reached: true,
+                scanline_number: self.current_scanline,
+            };
         }
-        else if self.cycle_count >= self.cycle_count_vblank_start_threshold
+
+        return PPUClockTickResult
         {
-            if !self.was_vblank_start_notified
-            {
-                self.was_vblank_start_notified = true;
-
-                PPUClockTickResult
-                {
-                    should_notify_vblank_status_started: true,
-                    should_notify_vblank_status_ended: false,
-                }
-            }
-            else
-            {
-                PPUClockTickResult
-                {
-                    should_notify_vblank_status_started: false,
-                    should_notify_vblank_status_ended: false,
-                }
-            }
-        }
-        else
-        {
-            PPUClockTickResult
-            {
-                should_notify_vblank_status_started: false,
-                should_notify_vblank_status_ended: false,
-            }
-        }
+            should_notify_scanline_reached: false,
+            scanline_number: self.current_scanline,
+        };
     }
 }

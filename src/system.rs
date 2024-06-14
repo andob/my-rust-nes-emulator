@@ -31,8 +31,6 @@ pub type address = u16;
 pub type mapper = u8;
 pub type color = u32;
 
-pub const DEFAULT_CHANNEL_SIZE : usize = 32;
-
 #[inline]
 pub fn address_from_high_low(high : byte, low : byte) -> address
 {

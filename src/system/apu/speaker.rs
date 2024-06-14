@@ -4,7 +4,6 @@ use anyhow::{anyhow, Context, Result};
 use cpal::{Device, FromSample, OutputCallbackInfo, SampleFormat, SizedSample, Stream, SupportedStreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use crate::codeloc;
-use crate::system::DEFAULT_CHANNEL_SIZE;
 
 pub struct Speaker
 {
@@ -20,7 +19,7 @@ impl Speaker
     {
         let device = cpal::default_host().default_output_device().context(codeloc!())?;
         let config = device.default_output_config().context(codeloc!())?;
-        let (waveform_sender, waveform_receiver) = flume::bounded::<f64>(DEFAULT_CHANNEL_SIZE);
+        let (waveform_sender, waveform_receiver) = flume::unbounded::<f64>();
 
         let audio_stream = match config.sample_format()
         {
