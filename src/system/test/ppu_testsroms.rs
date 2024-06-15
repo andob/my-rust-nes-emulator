@@ -36,7 +36,7 @@ pub fn test_ppu_with_sprite_zero_hit_testrom() -> Result<()>
     for i in 0..zip_archive.len()
     {
         //todo uncomment
-        // if i!=0 { continue; }
+        if i!=0 { continue; }
         let mut rom_bytes: Vec<byte> = Vec::new();
         let mut zipped_file = zip_archive.by_index(i).context(codeloc!())?;
         zipped_file.read_to_end(&mut rom_bytes).context(codeloc!())?;

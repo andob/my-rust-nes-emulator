@@ -3,6 +3,9 @@ name = "nes-emulator"
 version = "1.0.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 3
+
 [dependencies]
 # generic Result<> with any error
 anyhow = "1.0.79"

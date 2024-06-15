@@ -87,8 +87,8 @@ impl <'a> PPURenderingPipeline<'a>
                 let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index);
 
                 //todo implement scrolling
-                let unscaled_x = (((x_index + projection_offset_x) as f32) /*- self.ppu.scroll_x*/) * (TILE_WIDTH_IN_PIXELS as f32);
-                let unscaled_y = (((y_index + projection_offset_y) as f32) /*- self.ppu.scroll_y*/) * (TILE_HEIGHT_IN_PIXELS as f32);
+                let unscaled_x = (((x_index + projection_offset_x) as f32) - self.ppu.scroll_x) * (TILE_WIDTH_IN_PIXELS as f32);
+                let unscaled_y = (((y_index + projection_offset_y) as f32) - self.ppu.scroll_y) * (TILE_HEIGHT_IN_PIXELS as f32);
 
                 let scaled_width = (TILE_WIDTH_IN_PIXELS as f32) * scale_x;
                 let scaled_height = (TILE_HEIGHT_IN_PIXELS as f32) * scale_y;
@@ -164,10 +164,7 @@ impl <'a> PPURenderingPipeline<'a>
                         sprite.should_flip_horizontally, sprite.should_flip_vertically).unwrap_or_default();
                 }
 
-                if !sprite.is_sprite_zero
-                {
-                    self.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite, top_pattern, bottom_pattern);
-                }
+                self.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite, top_pattern, bottom_pattern);
             }
         }
         else
@@ -189,40 +186,13 @@ impl <'a> PPURenderingPipeline<'a>
                         sprite.should_flip_horizontally, sprite.should_flip_vertically).unwrap_or_default();
                 }
 
-                if !sprite.is_sprite_zero
-                {
-                    self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite, pattern);
-                }
+                self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite, pattern);
             }
         }
     }
 
     pub fn detect_sprite_zero_hit(&mut self, logging_options : &LoggingOptions)
     {
-        if self.ppu.control_flags.should_use_16pixel_high_sprites
-        {
-            let sprite_zero = self.ppu.oam.get_16pixel_high_sprites().first().cloned().unwrap();
-
-            let top_pattern = if sprite_zero.should_use_right_pattern_table
-                { self.pattern_tables.right.get(sprite_zero.pattern_table_index) }
-            else { self.pattern_tables.left.get(sprite_zero.pattern_table_index) };
-
-            let bottom_pattern = if sprite_zero.should_use_right_pattern_table
-                { self.pattern_tables.right.get(sprite_zero.pattern_table_index+1) }
-            else { self.pattern_tables.left.get(sprite_zero.pattern_table_index+1) };
-
-            self.sprite_zero_hit_detector.add_16pixel_high_sprite(sprite_zero, top_pattern, bottom_pattern);
-        }
-        else
-        {
-            let sprite_zero = self.ppu.oam.get_8pixel_high_sprites().first().cloned().unwrap();
-
-            let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_foreground;
-            let pattern = self.pattern_tables.get(pattern_table_base_address, sprite_zero.pattern_table_index);
-
-            self.sprite_zero_hit_detector.add_8pixel_high_sprite(sprite_zero, pattern);
-        }
-
         if !self.ppu.mask_flags.should_show_sprites
         {
             self.ppu.status_flags.is_sprite_zero_hit = false;

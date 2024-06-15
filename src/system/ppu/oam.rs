@@ -38,22 +38,6 @@ impl PPUOAM
         }
     }
 
-    pub fn get_8pixel_high_sprites(&self) -> Vec<Sprite>
-    {
-        let flags_filter = |_flags : byte| true;
-        let pattern_table_index_parser = |data : byte| data as address;
-
-        return self.get_sprites(flags_filter, pattern_table_index_parser);
-    }
-
-    pub fn get_16pixel_high_sprites(&self) -> Vec<Sprite>
-    {
-        let flags_filter = |_flags : byte| true;
-        let pattern_table_index_parser = |data : byte| (data & 0b11111110) as address;
-
-        return self.get_sprites(flags_filter, pattern_table_index_parser);
-    }
-
     pub fn get_8pixel_high_background_sprites(&self) -> Vec<Sprite>
     {
         let flags_filter = |flags : byte| ((flags & 0b00100000) >> 5) == 1;
@@ -98,6 +82,7 @@ impl PPUOAM
                 let pattern_table_data = self.bytes[index+1];
                 sprites.push(Sprite
                 {
+                    index: index as byte,
                     x: self.bytes[index+3],
                     y: self.bytes[index],
                     should_use_right_pattern_table: pattern_table_data & 0b00000001 == 1,
@@ -105,7 +90,6 @@ impl PPUOAM
                     palette_index: flags & 0b00000011,
                     should_flip_horizontally: (flags & 0b01000000) >> 6 == 1,
                     should_flip_vertically: (flags & 0b10000000) >> 7 == 1,
-                    is_sprite_zero: index==0,
                 });
             }
         }

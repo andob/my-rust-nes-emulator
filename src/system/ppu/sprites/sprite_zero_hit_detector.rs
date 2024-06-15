@@ -21,11 +21,15 @@ impl SpriteZeroHitDetector
 {
     pub fn new() -> SpriteZeroHitDetector
     {
-        return SpriteZeroHitDetector
+        let mut hit_detector = SpriteZeroHitDetector
         {
             background_pixel_hit_matrix: PixelHitMatrix::new(),
             foreground_pixel_hit_matrix: PixelHitMatrix::new(),
         };
+
+        hit_detector.background_pixel_hit_matrix.fill_padding();
+
+        return hit_detector;
     }
 
     pub fn clear(&mut self)
@@ -60,7 +64,7 @@ impl SpriteZeroHitDetector
         };
 
         let pixel_hit_matrix =
-            if sprite.is_sprite_zero { &mut self.foreground_pixel_hit_matrix }
+            if sprite.index==0 { &mut self.foreground_pixel_hit_matrix }
             else { &mut self.background_pixel_hit_matrix };
 
         pixel_hit_matrix.aggregate(&top_texture_matrix, sprite.x as usize, top_texture_y);
@@ -78,7 +82,7 @@ impl SpriteZeroHitDetector
         };
 
         let pixel_hit_matrix =
-            if sprite.is_sprite_zero { &mut self.foreground_pixel_hit_matrix }
+            if sprite.index==0 { &mut self.foreground_pixel_hit_matrix }
             else { &mut self.background_pixel_hit_matrix };
 
         pixel_hit_matrix.aggregate(&texture_pixel_matrix, sprite.x as usize, sprite.y as usize);
@@ -86,15 +90,18 @@ impl SpriteZeroHitDetector
 
     pub fn debug(&self, ppu : &mut PPU)
     {
-        let file_name = String::from("sprite_zero_hit_debug.txt");
-        self.debug_dump_to_file(&file_name, ppu);
-
-        unsafe
+        if ppu.mask_flags.should_show_background && ppu.mask_flags.should_show_sprites
         {
-            //todo uncomment
-            let command = format!("konsole -e nano {}", file_name);
-            let command_cstring = CString::new(command).unwrap();
-            libc::system(command_cstring.as_ptr() as *const c_char);
+            let file_name = String::from("sprite_zero_hit_debug.txt");
+            self.debug_dump_to_file(&file_name, ppu);
+
+            unsafe
+            {
+                //todo uncomment
+                // let command = format!("konsole -e nano {}", file_name);
+                // let command_cstring = CString::new(command).unwrap();
+                // libc::system(command_cstring.as_ptr() as *const c_char);
+            }
         }
     }
 
@@ -109,13 +116,11 @@ impl SpriteZeroHitDetector
            self.was_sprite_zero_hit(), ppu.status_flags.is_sprite_zero_hit
         ).unwrap();
 
-        write!(file, "BACKGROUND: show={}\n{}\n",
-           ppu.mask_flags.should_show_background,
+        write!(file, "BACKGROUND:\n{}\n",
            self.background_pixel_hit_matrix.to_string()
         ).unwrap();
 
-        write!(file, "FOREGROUND: show={}\n{}\n",
-           ppu.mask_flags.should_show_sprites,
+        write!(file, "FOREGROUND:\n{}\n",
            self.foreground_pixel_hit_matrix.to_string()
         ).unwrap();
     }
@@ -129,6 +134,12 @@ impl SpriteZeroHitDetector
                 let background_pixel = self.background_pixel_hit_matrix.get(x, y);
                 let foreground_pixel = self.foreground_pixel_hit_matrix.get(x, y);
                 if background_pixel && foreground_pixel
+                {
+                    return true;
+                }
+
+                let alternate_background_pixel = self.background_pixel_hit_matrix.get(x, y+1);
+                if alternate_background_pixel && foreground_pixel
                 {
                     return true;
                 }

@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
 use itertools::Itertools;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::render::WindowCanvas;
@@ -142,6 +143,7 @@ impl PPU
             }
             else if ppu_clock_tick_result.should_check_sprite_zero_hit_mid_frame()
             {
+                let now = Instant::now();
                 let canvas_ref  : &mut Option<&mut WindowCanvas> = &mut None;
                 let mut pipeline = PPURenderingPipeline::start(
                     &mut ppu, &env, &pattern_tables, &mut sprite_zero_hit_detector, canvas_ref);
@@ -150,6 +152,8 @@ impl PPU
                 pipeline.render_foreground_sprites_from_oam(canvas_ref);
                 pipeline.detect_sprite_zero_hit(&env.logging_options);
                 pipeline.end(canvas_ref);
+                let elapsed = now.elapsed();
+                println!("{}", elapsed.as_micros());
             }
 
             ppu.handle_read_commands_from_cpu();
