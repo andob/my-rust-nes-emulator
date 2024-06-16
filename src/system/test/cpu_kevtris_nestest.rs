@@ -17,7 +17,6 @@ pub fn test_cpu_with_kevtris_nestest() -> Result<()>
 
     let mut start_args = SystemStartArgs::with_rom_bytes(Box::new(rom_bytes)).context(codeloc!())?;
 
-    start_args.should_disable_audio = true;
     start_args.should_disable_video = true;
     start_args.should_disable_interrupt_vectors = true;
     start_args.cpu_debugger.cpu_state_watcher = Some(cpu_state_sender);

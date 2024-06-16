@@ -1,13 +1,12 @@
 use std::ops::Range;
-use anyhow::{Context, Result};
-use sdl2::render::TextureCreator;
+use anyhow::{anyhow, Context, Result};
+use sdl2::pixels::PixelFormatEnum;
+use sdl2::render::{BlendMode, Texture, TextureCreator};
 use sdl2::video::WindowContext;
 use crate::codeloc;
 use crate::system::{address, byte, color};
 use crate::system::ppu::bus::{PATTERN_TABLE0_END_ADDRESS, PATTERN_TABLE0_START_ADDRESS, PATTERN_TABLE1_END_ADDRESS, PATTERN_TABLE1_START_ADDRESS, PPUBus};
 use crate::system::ppu::character_rom::CharacterROM;
-use crate::system::ppu::textures::Texture;
-use crate::system::ppu::textures::texture_pixel_matrix::TexturePixelMatrix;
 
 const NUMBER_OF_TILES_IN_PATTERN_TABLE : address = 255;
 const TILE_SIZE_IN_BYTES : address = 16;
@@ -30,7 +29,12 @@ impl <'a> PatternTable<'a>
         let mut textures : Vec<Texture> = Vec::new();
         for _tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
         {
-            let texture = Texture::new(texture_creator).context(codeloc!())?;
+            let format = PixelFormatEnum::RGBA8888;
+            let width = TILE_WIDTH_IN_PIXELS as u32;
+            let height = TILE_HEIGHT_IN_PIXELS as u32;
+            let mut texture = texture_creator.create_texture_streaming(format, width, height).context(codeloc!())?;
+            texture.set_blend_mode(BlendMode::Blend);
+
             textures.push(texture);
         }
 
@@ -46,7 +50,7 @@ impl <'a> PatternTable<'a>
     {
         for tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
         {
-            self.textures[tile_index as usize].with_lock(|pixels : &mut TexturePixelMatrix|
+            self.textures[tile_index as usize].with_lock(None, |buffer : &mut[u8], pitch : usize|
             {
                 let tile_address = self.address_range.start + tile_index * TILE_SIZE_IN_BYTES;
                 let (plane1, plane2) = ppu_bus.character_rom.get_tile_planes(tile_address);
@@ -66,10 +70,14 @@ impl <'a> PatternTable<'a>
                             (false, false) => 0 as color, //transparent
                         };
 
-                        pixels.put(x as usize, y as usize, pixel);
+                        let offset = (y as usize) * pitch + (x as usize) * 4;
+                        buffer[offset+0] = ((pixel>>24)&0xFF) as byte;
+                        buffer[offset+1] = ((pixel>>16)&0xFF) as byte;
+                        buffer[offset+2] = ((pixel>>08)&0xFF) as byte;
+                        buffer[offset+3] = ((pixel>>00)&0xFF) as byte;
                     }
                 }
-            }).context(codeloc!())?;
+            }).map_err(|msg|anyhow!(msg.clone()))?;
         }
 
         return Ok(());

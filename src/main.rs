@@ -18,8 +18,7 @@ fn main() -> Result<()>
     {
         let rom_file_path = args.last().cloned().unwrap_or_default();
         let rom_bytes = fs::read(rom_file_path).context(codeloc!())?.into_boxed_slice();
-        let mut start_args = SystemStartArgs::with_rom_bytes(rom_bytes).context(codeloc!())?;
-        start_args.should_disable_audio = true; //todo fix buggy audio interrupts
+        let start_args = SystemStartArgs::with_rom_bytes(rom_bytes).context(codeloc!())?;
         System::start(start_args).context(codeloc!())?.await_termination();
     }
     else

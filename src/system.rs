@@ -63,7 +63,7 @@ impl SystemStartArgs
             logging_options: LoggingOptions::defaults(),
             cpu_debugger: CPUDebugger::new(),
             ppu_debugger: PPUDebugger::new(),
-            should_disable_audio: false,
+            should_disable_audio: true,
             should_disable_video: false,
             should_disable_interrupt_vectors: false,
             window_title: String::from("Emulator"),

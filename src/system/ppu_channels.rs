@@ -115,7 +115,6 @@ impl System
 {
     pub fn create_ppu_system_channels(logging_options : LoggingOptions) -> (CPUToPPUChannels, PPUToCPUChannels)
     {
-        //todo why not use bounded channel?
         let (write_command_sender, write_command_receiver) = flume::unbounded::<(CPUToPPUCommTarget, Box<[byte]>)>();
         let (read_command_sender, read_command_receiver) = flume::unbounded::<CPUToPPUCommTarget>();
         let (read_command_result_sender, read_command_result_receiver) = flume::unbounded::<byte>();

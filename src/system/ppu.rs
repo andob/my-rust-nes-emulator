@@ -1,10 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Instant;
 use itertools::Itertools;
 use sdl2::event::{Event, WindowEvent};
-use sdl2::render::WindowCanvas;
 use crate::codeloc;
 use crate::system::{address, byte};
 use crate::system::debugger::{LoggingOptions, PPUDebugger};
@@ -19,7 +17,6 @@ use crate::system::ppu::metrics::WindowMetrics;
 use crate::system::ppu::oam::PPUOAM;
 use crate::system::ppu::pattern_tables::PatternTables;
 use crate::system::ppu::rendering::PPURenderingPipeline;
-use crate::system::ppu::sprites::sprite_zero_hit_detector::SpriteZeroHitDetector;
 use crate::system::ppu_channels::PPUToCPUChannels;
 
 pub mod character_rom;
@@ -33,10 +30,7 @@ mod metrics;
 mod communication;
 mod rendering;
 mod clock;
-mod sprites;
-mod textures;
 
-//todo what is the CPU state on boot?
 pub struct PPU
 {
     pub status_flags : PPUStatusFlags,
@@ -105,14 +99,21 @@ impl PPU
 
         let texture_creator = canvas.texture_creator();
         let mut pattern_tables = PatternTables::new(&texture_creator).context(codeloc!())?;
-        let mut sprite_zero_hit_detector = SpriteZeroHitDetector::new();
 
         loop
         {
             if env.is_shutting_down.load(Ordering::Relaxed) { return Ok(()) }
 
             let ppu_clock_tick_result = ppu.clock.tick();
-            if ppu_clock_tick_result.should_notify_vblank_started()
+            if ppu_clock_tick_result.should_notify_visible_scanline_reached()
+            {
+                //todo implement sprite zero hit algorithm
+                if ppu.mask_flags.should_show_sprites && ppu.mask_flags.should_show_background
+                {
+                    ppu.status_flags.is_sprite_zero_hit = true;
+                }
+            }
+            else if ppu_clock_tick_result.should_notify_vblank_started()
             {
                 if ppu.bus.palette.was_recently_changed()
                 {
@@ -120,14 +121,17 @@ impl PPU
                     pattern_tables.right.refresh_textures(&ppu.bus).context(codeloc!())?;
                 }
 
-                let canvas_ref = &mut Some(&mut canvas);
-                let mut pipeline = PPURenderingPipeline::start(
-                    &mut ppu, &env, &pattern_tables, &mut sprite_zero_hit_detector, canvas_ref);
-                pipeline.render_background_sprites_from_oam(canvas_ref);
-                pipeline.render_background_from_nametables(canvas_ref);
-                pipeline.render_foreground_sprites_from_oam(canvas_ref);
-                pipeline.detect_sprite_zero_hit(&env.logging_options);
-                pipeline.end(canvas_ref);
+                let mut pipeline = PPURenderingPipeline
+                {
+                    ppu: &mut ppu, env: &env, canvas: &mut canvas,
+                    pattern_tables: &pattern_tables,
+                };
+
+                pipeline.start();
+                pipeline.render_background_sprites_from_oam();
+                pipeline.render_background_from_nametables();
+                pipeline.render_foreground_sprites_from_oam();
+                pipeline.end();
 
                 ppu.status_flags.has_vblank_started = true;
                 if ppu.control_flags.is_nmi_enabled
@@ -139,21 +143,6 @@ impl PPU
             {
                 ppu.status_flags.has_vblank_started = false;
                 ppu.status_flags.is_sprite_zero_hit = false;
-                ppu.status_flags.has_sprite_overflow = false;
-            }
-            else if ppu_clock_tick_result.should_check_sprite_zero_hit_mid_frame()
-            {
-                let now = Instant::now();
-                let canvas_ref  : &mut Option<&mut WindowCanvas> = &mut None;
-                let mut pipeline = PPURenderingPipeline::start(
-                    &mut ppu, &env, &pattern_tables, &mut sprite_zero_hit_detector, canvas_ref);
-                pipeline.render_background_sprites_from_oam(canvas_ref);
-                pipeline.render_background_from_nametables(canvas_ref);
-                pipeline.render_foreground_sprites_from_oam(canvas_ref);
-                pipeline.detect_sprite_zero_hit(&env.logging_options);
-                pipeline.end(canvas_ref);
-                let elapsed = now.elapsed();
-                println!("{}", elapsed.as_micros());
             }
 
             ppu.handle_read_commands_from_cpu();

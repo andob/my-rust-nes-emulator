@@ -21,7 +21,6 @@ impl Test
             "cpu_blargg_test" => test_cpu_with_blargg_testrom,
             "ppu_blocks_test" => test_ppu_with_blocks_testrom,
             "ppu_physics_test" => test_ppu_with_physics_testrom,
-            "ppu_sprite_zero_hit_test" => test_ppu_with_sprite_zero_hit_testrom,
             "ppu_spritecans_test" => test_ppu_with_spritecans_testrom,
             "joystick_test" => test_joystick,
         };

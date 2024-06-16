@@ -6,8 +6,8 @@ pub struct PPUMaskFlags
     pub should_emphasize_blue : bool, //todo use this
     pub should_emphasize_green : bool, //todo use this
     pub should_emphasize_red : bool, //todo use this
-    pub should_show_sprites : bool, //todo use this
-    pub should_show_background : bool, //todo use this
+    pub should_show_sprites : bool,
+    pub should_show_background : bool,
     pub should_show_sprites_in_leftmost_part_of_screen: bool, //todo use this
     pub should_show_background_in_leftmost_part_of_screen: bool, //todo use this
     pub should_render_as_grayscale : bool, //todo use this

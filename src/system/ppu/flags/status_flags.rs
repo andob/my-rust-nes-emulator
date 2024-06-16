@@ -3,8 +3,8 @@ use crate::system::byte;
 pub struct PPUStatusFlags
 {
     pub has_vblank_started : bool,
-    pub is_sprite_zero_hit : bool, //todo use this
-    pub has_sprite_overflow : bool, //todo use this
+    pub is_sprite_zero_hit : bool,
+    pub has_sprite_overflow : bool,
 }
 
 impl PPUStatusFlags

@@ -3,8 +3,11 @@ name = "nes-emulator"
 version = "1.0.0"
 edition = "2021"
 
+[profile.release]
+opt-level = 0
+
 [profile.dev]
-opt-level = 3
+opt-level = 0
 
 [dependencies]
 # generic Result<> with any error
@@ -17,7 +20,7 @@ rand = "0.8.5"
 maplit2 = "1.0.5"
 
 # iter extensions
-itertools = "0.12.0"
+itertools = "0.13.0"
 
 # String.substring()
 substring = "1.4.5"
@@ -30,13 +33,13 @@ strum_macros = "0.26.1"
 flume = "0.11.0"
 
 # Simple DirectMedia Layer bindings
-sdl2 = "0.36.0"
+sdl2 = "0.37.0"
 
 # CPAL Cross Platform Audio Library
 cpal = "0.15.2"
 
 # Linux API bindings
-nix = "0.28.0"
+nix = "0.29.0"
 
 # Joystick Linux API wrapper
 joydev = "0.3.1"
@@ -45,4 +48,4 @@ joydev = "0.3.1"
 chrono = "0.4.34"
 
 # ZIP compression library
-zip = "0.6.6"
+zip = "2.1.3"

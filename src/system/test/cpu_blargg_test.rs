@@ -15,7 +15,6 @@ pub fn test_cpu_with_blargg_testrom() -> Result<()>
         zipped_file.read_to_end(&mut rom_bytes).context(codeloc!())?;
 
         let mut start_args = SystemStartArgs::with_rom_bytes(rom_bytes.into_boxed_slice()).context(codeloc!())?;
-        start_args.should_disable_audio = true; //todo fix buggy audio interrupts
         start_args.window_title = format!("[{}] {}", i, zipped_file.name());
 
         let running_system = System::start(start_args).context(codeloc!())?;

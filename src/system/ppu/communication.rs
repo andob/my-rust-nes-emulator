@@ -11,7 +11,6 @@ impl PPU
         let ppu = self;
         if let Ok(target) = ppu.cpu_channels.get_read_command_from_cpu()
         {
-            //todo check implementation https://www.nesdev.org/wiki/PPU_registers
             ppu.cpu_channels.respond_to_read_command_from_cpu(target, match target
             {
                 CPUToPPUCommTarget::ControlFlags => ppu.control_flags.to_byte(),
@@ -32,7 +31,6 @@ impl PPU
         let ppu = self;
         match ppu.cpu_channels.get_write_command_from_cpu()
         {
-            //todo check implementation https://www.nesdev.org/wiki/PPU_registers
             Ok((CPUToPPUCommTarget::ControlFlags, values)) =>
             {
                 ppu.control_flags = PPUControlFlags::from_byte(values[0]);

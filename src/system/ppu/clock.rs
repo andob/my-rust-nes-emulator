@@ -14,12 +14,18 @@ pub struct PPUClock
 
 pub struct PPUClockTickResult
 {
-    pub should_notify_scanline_reached : bool,
+    should_notify_scanline_reached : bool,
     pub scanline_number : usize,
 }
 
 impl PPUClockTickResult
 {
+    pub fn should_notify_visible_scanline_reached(&self) -> bool
+    {
+        return self.should_notify_scanline_reached &&
+            self.scanline_number < VBLANK_START_SCANLINE_NUMBER;
+    }
+
     pub fn should_notify_vblank_started(&self) -> bool
     {
         return self.should_notify_scanline_reached &&
@@ -31,13 +37,6 @@ impl PPUClockTickResult
         return self.should_notify_scanline_reached &&
             self.scanline_number == VBLANK_END_SCANLINE_NUMBER;
     }
-
-    pub fn should_check_sprite_zero_hit_mid_frame(&self) -> bool
-    {
-        return self.should_notify_scanline_reached &&
-                self.scanline_number <= NUMBER_OF_VISIBLE_SCAN_LINES &&
-                self.scanline_number % 100 == 0
-    }
 }
 
 impl PPUClock
@@ -45,7 +44,6 @@ impl PPUClock
     pub fn new() -> PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
-        //todo how to keep constant FPS?
         return PPUClock
         {
             cycle_count: 0,

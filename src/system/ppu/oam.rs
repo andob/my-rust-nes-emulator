@@ -1,9 +1,21 @@
 use crate::system::{address, byte};
-use crate::system::ppu::sprites::Sprite;
 
 pub struct PPUOAM
 {
     bytes : Box<[byte]>
+}
+
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub struct Sprite
+{
+    pub index : byte,
+    pub x : byte,
+    pub y : byte,
+    pub should_use_right_pattern_table : bool,
+    pub pattern_table_index : address,
+    pub palette_index : byte, //todo how to use this?
+    pub should_flip_horizontally : bool,
+    pub should_flip_vertically : bool,
 }
 
 impl PPUOAM
