@@ -64,6 +64,8 @@ impl PPU
 {
     pub fn new(character_rom : CharacterROM, channels : PPUToCPUChannels) -> PPU
     {
+        let character_rom_hash = character_rom.hash();
+
         return PPU
         {
             status_flags: PPUStatusFlags::new(),
@@ -76,7 +78,7 @@ impl PPU
             input_subsystem: InputSubsystem::new(),
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
-            clock: PPUClock::new(),
+            clock: PPUClock::new(character_rom_hash),
             is_second_scroll_write: false,
             first_bus_pointer_write: 0,
             is_second_bus_pointer_write: false,
@@ -92,7 +94,7 @@ impl PPU
 
         let sdl = sdl2::init().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
         let video_subsystem = sdl.video().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
-        let window = video_subsystem.window(env.window_title.as_str(), ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
+        let mut window = video_subsystem.window(env.window_title.as_str(), ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
             .position_centered().resizable().opengl().build().context(codeloc!())?;
         let (opengl_driver_index, _) = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap();
         let mut canvas = window.into_canvas().index(opengl_driver_index as u32).build().context(codeloc!())?;

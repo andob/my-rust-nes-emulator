@@ -33,4 +33,9 @@ impl CharacterROM
             self.bytes[address] = value;
         }
     }
+
+    pub fn hash(&self) -> String
+    {
+        return format!("{:x}", md5::compute(&*self.bytes));
+    }
 }

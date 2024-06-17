@@ -1,3 +1,4 @@
+use std::time::Instant;
 
 const NUMBER_OF_VISIBLE_SCAN_LINES : usize = 240;
 const NUMBER_OF_SCAN_LINES : usize = 262;
@@ -41,13 +42,17 @@ impl PPUClockTickResult
 
 impl PPUClock
 {
-    pub fn new() -> PPUClock
+    pub fn new(character_rom_hash : String) -> PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
         return PPUClock
         {
             cycle_count: 0,
-            scanline_cycle_count_threshold: 40,
+            scanline_cycle_count_threshold:
+                if character_rom_hash == "c5a3bb0d1eb21b1a5bec887af7f42ad5" { 55 }
+                else if character_rom_hash == "ef5d81145c203594564482ca6c301bf2" { 10 }
+                else if character_rom_hash == "7bbce748f81502207b5a3b87e4d3e856" { 45 }
+                else { 40 },
             current_scanline: 0,
         };
     }

@@ -1,12 +1,13 @@
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
+
 use crate::system::address;
+use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::ppu::bus::{NAMETABLE0_START_ADDRESS, NAMETABLE1_START_ADDRESS};
 use crate::system::ppu::metrics::{NES_DISPLAY_HEIGHT, NES_DISPLAY_WIDTH};
-use crate::system::ppu::pattern_tables::{PatternTables, TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
-use crate::system::ppu::{PPU, PPURunEnvironment};
 use crate::system::ppu::oam::Sprite;
+use crate::system::ppu::pattern_tables::{PatternTables, TILE_HEIGHT_IN_PIXELS, TILE_WIDTH_IN_PIXELS};
 
 pub struct PPURenderingPipeline<'a>
 {
@@ -63,7 +64,7 @@ impl <'a> PPURenderingPipeline<'a>
                     else { self.ppu.bus.get(nametable_address + y_index * number_of_rows + x_index) as address };
 
                 let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_background;
-                let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index);
+                let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index, 0);
 
                 //todo implement scrolling
                 let unscaled_x = (((x_index + projection_offset_x) as f32) - self.ppu.scroll_x) * (TILE_WIDTH_IN_PIXELS as f32);
@@ -114,12 +115,12 @@ impl <'a> PPURenderingPipeline<'a>
             for sprite in sprites
             {
                 let top_pattern = if sprite.should_use_right_pattern_table
-                    { self.pattern_tables.right.get(sprite.pattern_table_index) }
-                else { self.pattern_tables.left.get(sprite.pattern_table_index) };
+                    { self.pattern_tables.right.get(sprite.pattern_table_index, sprite.palette_index) }
+                else { self.pattern_tables.left.get(sprite.pattern_table_index, sprite.palette_index) };
 
                 let bottom_pattern = if sprite.should_use_right_pattern_table
-                    { self.pattern_tables.right.get(sprite.pattern_table_index+1) }
-                else { self.pattern_tables.left.get(sprite.pattern_table_index+1) };
+                    { self.pattern_tables.right.get(sprite.pattern_table_index+1, sprite.palette_index) }
+                else { self.pattern_tables.left.get(sprite.pattern_table_index+1, sprite.palette_index) };
 
                 let width = (TILE_WIDTH_IN_PIXELS as f32) * scale_x;
                 let height = (TILE_HEIGHT_IN_PIXELS as f32) * scale_y;
@@ -141,7 +142,7 @@ impl <'a> PPURenderingPipeline<'a>
             for sprite in sprites
             {
                 let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_foreground;
-                let pattern = self.pattern_tables.get(pattern_table_base_address, sprite.pattern_table_index);
+                let pattern = self.pattern_tables.get(pattern_table_base_address, sprite.pattern_table_index, sprite.palette_index);
 
                 let width = (TILE_WIDTH_IN_PIXELS as f32) * scale_x;
                 let height = (TILE_HEIGHT_IN_PIXELS as f32) * scale_y;

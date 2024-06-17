@@ -20,6 +20,7 @@ impl WindowMetrics
     pub fn get_scale_x(&self) -> f32 { self.scale_x }
     pub fn get_scale_y(&self) -> f32 { self.scale_y }
 
+    pub fn get_window_size(&self) -> (u32, u32) { (self.get_window_width(), self.get_window_height()) }
     pub fn get_window_width(&self) -> u32 { ((NES_DISPLAY_WIDTH as f32) * self.scale_x) as u32 }
     pub fn get_window_height(&self) -> u32 { ((NES_DISPLAY_HEIGHT as f32) * self.scale_y) as u32 }
 

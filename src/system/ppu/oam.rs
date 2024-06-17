@@ -13,7 +13,7 @@ pub struct Sprite
     pub y : byte,
     pub should_use_right_pattern_table : bool,
     pub pattern_table_index : address,
-    pub palette_index : byte, //todo how to use this?
+    pub palette_index : byte,
     pub should_flip_horizontally : bool,
     pub should_flip_vertically : bool,
 }
