@@ -1,4 +1,4 @@
-use std::time::Instant;
+use crate::system::ppu::character_rom::{DONKEY_KONG_CHARACTER_ROM_HASH, PINBALL_CHARACTER_ROM_HASH, SMB1_CHARACTER_ROM_HASH};
 
 const NUMBER_OF_VISIBLE_SCAN_LINES : usize = 240;
 const NUMBER_OF_SCAN_LINES : usize = 262;
@@ -42,17 +42,18 @@ impl PPUClockTickResult
 
 impl PPUClock
 {
-    pub fn new(character_rom_hash : String) -> PPUClock
+    pub fn new(character_rom_hash : &String) -> PPUClock
     {
         //todo thresholds should not be hardcoded, thresholds should be determined based on hardware capabilities!
+        let threshold = if character_rom_hash == DONKEY_KONG_CHARACTER_ROM_HASH { 50 }
+            else if character_rom_hash == PINBALL_CHARACTER_ROM_HASH { 10 }
+            else if character_rom_hash == SMB1_CHARACTER_ROM_HASH { 40 }
+            else { 40 };
+
         return PPUClock
         {
             cycle_count: 0,
-            scanline_cycle_count_threshold:
-                if character_rom_hash == "c5a3bb0d1eb21b1a5bec887af7f42ad5" { 55 }
-                else if character_rom_hash == "ef5d81145c203594564482ca6c301bf2" { 10 }
-                else if character_rom_hash == "7bbce748f81502207b5a3b87e4d3e856" { 45 }
-                else { 40 },
+            scanline_cycle_count_threshold: threshold,
             current_scanline: 0,
         };
     }

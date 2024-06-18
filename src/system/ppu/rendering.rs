@@ -19,10 +19,25 @@ pub struct PPURenderingPipeline<'a>
 
 impl <'a> PPURenderingPipeline<'a>
 {
-    pub fn start(&mut self)
+    pub fn start
+    (
+        ppu : &'a mut PPU,
+        env : &'a PPURunEnvironment,
+        pattern_tables : &'a PatternTables<'a>,
+        canvas : &'a mut WindowCanvas,
+    ) -> Option<PPURenderingPipeline<'a>>
     {
-        self.canvas.set_draw_color(Color::BLACK);
-        self.canvas.clear();
+        if !env.should_disable_video && !ppu.scroll.should_prevent_rendering()
+        {
+            let pipeline = PPURenderingPipeline { ppu, env, pattern_tables, canvas };
+
+            pipeline.canvas.set_draw_color(Color::BLACK);
+            pipeline.canvas.clear();
+
+            return Some(pipeline);
+        }
+
+        return None;
     }
 
     pub fn end(self)
@@ -45,12 +60,9 @@ impl <'a> PPURenderingPipeline<'a>
         self.render_background_from_nametable(second_nametable_address, second_nametable_projection_offset);
     }
 
-    fn render_background_from_nametable(&mut self, nametable_address : address, projection_offset : (address, address))
+    fn render_background_from_nametable(&mut self, nametable_address : address, (projection_offset_x, projection_offset_y) : (address, address))
     {
         let (scale_x, scale_y) = self.ppu.window_metrics.get_scale();
-
-        let projection_offset_x = projection_offset.0 / (TILE_WIDTH_IN_PIXELS as address);
-        let projection_offset_y = projection_offset.1 / (TILE_HEIGHT_IN_PIXELS as address);
 
         let number_of_rows = NES_DISPLAY_WIDTH / (TILE_WIDTH_IN_PIXELS as address);
         let number_of_columns = NES_DISPLAY_HEIGHT / (TILE_HEIGHT_IN_PIXELS as address);
@@ -66,9 +78,8 @@ impl <'a> PPURenderingPipeline<'a>
                 let pattern_table_base_address = self.ppu.control_flags.base_pattern_table_address_for_background;
                 let pattern = self.pattern_tables.get(pattern_table_base_address, pattern_table_index, 0);
 
-                //todo implement scrolling
-                let unscaled_x = (((x_index + projection_offset_x) as f32) - self.ppu.scroll_x) * (TILE_WIDTH_IN_PIXELS as f32);
-                let unscaled_y = (((y_index + projection_offset_y) as f32) - self.ppu.scroll_y) * (TILE_HEIGHT_IN_PIXELS as f32);
+                let unscaled_x = (x_index as f32) * (TILE_WIDTH_IN_PIXELS as f32) + (projection_offset_x as f32) - self.ppu.scroll.x;
+                let unscaled_y = (y_index as f32) * (TILE_HEIGHT_IN_PIXELS as f32) + (projection_offset_y as f32) - self.ppu.scroll.y;
 
                 let scaled_width = (TILE_WIDTH_IN_PIXELS as f32) * scale_x;
                 let scaled_height = (TILE_HEIGHT_IN_PIXELS as f32) * scale_y;

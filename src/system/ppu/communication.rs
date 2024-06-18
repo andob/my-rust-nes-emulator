@@ -1,4 +1,4 @@
-use crate::system::{address, address_from_high_low, byte};
+use crate::system::{address, byte};
 use crate::system::ppu::flags::control_flags::PPUControlFlags;
 use crate::system::ppu::flags::mask_flags::PPUMaskFlags;
 use crate::system::ppu::PPU;
@@ -18,8 +18,8 @@ impl PPU
                 CPUToPPUCommTarget::StatusFlags => ppu.status_flags.to_byte(),
                 CPUToPPUCommTarget::OAMAddress => ppu.oam_pointer as byte,
                 CPUToPPUCommTarget::OAMData => ppu.oam.get(ppu.oam_pointer),
-                CPUToPPUCommTarget::BusAddress => ppu.bus_pointer as byte,
-                CPUToPPUCommTarget::BusData => ppu.bus.get(ppu.bus_pointer),
+                CPUToPPUCommTarget::BusAddress => ppu.bus_pointer.as_byte(),
+                CPUToPPUCommTarget::BusData => ppu.bus.get(ppu.bus_pointer.as_address()),
                 CPUToPPUCommTarget::Joystick => ppu.input_subsystem.get_pressed_key(),
                 _ => 0,
             });
@@ -50,28 +50,15 @@ impl PPU
             }
             Ok((CPUToPPUCommTarget::ScrollPosition, values)) =>
             {
-                if ppu.is_second_scroll_write { ppu.scroll_y = 0f32; }
-                // else { ppu.scroll_x = (((values[0] as i8) & 0b01111111) as f32) / 20f32; }
-                else { ppu.scroll_x += if values[0]>0 { 0.01f32 } else { 0f32 }; }
-
-                ppu.is_second_scroll_write = !ppu.is_second_scroll_write;
+                ppu.scroll.write(values[0] as f32);
             }
             Ok((CPUToPPUCommTarget::BusAddress, values)) =>
             {
-                if ppu.is_second_bus_pointer_write
-                {
-                    ppu.bus_pointer = address_from_high_low(ppu.first_bus_pointer_write, values[0]);
-                    ppu.is_second_bus_pointer_write = false;
-                }
-                else
-                {
-                    ppu.first_bus_pointer_write = values[0];
-                    ppu.is_second_bus_pointer_write = true;
-                }
+                ppu.bus_pointer.write(values[0]);
             }
             Ok((CPUToPPUCommTarget::BusData, values)) =>
             {
-                ppu.bus.put(ppu.bus_pointer, values[0]);
+                ppu.bus.put(ppu.bus_pointer.as_address(), values[0]);
                 ppu.bus_pointer = ppu.bus_pointer.wrapping_add(ppu.control_flags.vram_address_increment_amount as address);
             }
             Ok((CPUToPPUCommTarget::OAM_DMA, values)) =>

@@ -1,5 +1,9 @@
 use crate::system::{address, byte, mapper};
 
+pub const DONKEY_KONG_CHARACTER_ROM_HASH : &str = "c5a3bb0d1eb21b1a5bec887af7f42ad5";
+pub const PINBALL_CHARACTER_ROM_HASH : &str = "ef5d81145c203594564482ca6c301bf2";
+pub const SMB1_CHARACTER_ROM_HASH : &str = "7bbce748f81502207b5a3b87e4d3e856";
+
 pub struct CharacterROM
 {
     mapper : mapper,

@@ -22,7 +22,6 @@ const NUMBER_OF_PALETTES : byte = 5;
 pub struct PatternTable<'a>
 {
     address_range : Range<address>,
-    texture_creator : &'a TextureCreator<WindowContext>,
     texture_matrix : Box<[Box<[Texture<'a>]>]>,
 }
 
@@ -31,7 +30,7 @@ impl <'a> PatternTable<'a>
     pub fn new(texture_creator : &'a TextureCreator<WindowContext>, address_range : Range<address>) -> Result<PatternTable>
     {
         let mut texture_matrix : Vec<Box<[Texture<'a>]>> = Vec::new();
-        for i in 0..NUMBER_OF_PALETTES
+        for _ in 0..NUMBER_OF_PALETTES
         {
             let mut texture_vector : Vec<Texture> = Vec::new();
             for _tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
@@ -51,7 +50,6 @@ impl <'a> PatternTable<'a>
         return Ok(PatternTable
         {
             address_range: address_range,
-            texture_creator: texture_creator,
             texture_matrix: texture_matrix.into_boxed_slice(),
         });
     }
@@ -60,7 +58,7 @@ impl <'a> PatternTable<'a>
     {
         for tile_index in 0..NUMBER_OF_TILES_IN_PATTERN_TABLE
         {
-            for palette_index in 0..NUMBER_OF_PALETTES
+            for palette_index in 0..NUMBER_OF_PALETTES as address
             {
                 let texture = &mut self.texture_matrix[palette_index as usize][tile_index as usize];
                 texture.with_lock(None, |buffer : &mut[u8], pitch : usize|
@@ -77,9 +75,9 @@ impl <'a> PatternTable<'a>
 
                             let pixel = match (plane1_pixel, plane2_pixel)
                             {
-                                (true, true) => ppu_bus.palette.get_color(3 as address),
-                                (false, true) => ppu_bus.palette.get_color(2 as address),
-                                (true, false) => ppu_bus.palette.get_color(1 as address),
+                                (true, true) => ppu_bus.palette.get_color(palette_index*4 + 3),
+                                (false, true) => ppu_bus.palette.get_color(palette_index*4 + 2),
+                                (true, false) => ppu_bus.palette.get_color(palette_index*4 + 1),
                                 (false, false) => 0 as color, //transparent
                             };
 

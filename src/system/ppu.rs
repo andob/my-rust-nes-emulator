@@ -4,14 +4,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use itertools::Itertools;
 use sdl2::event::{Event, WindowEvent};
 use crate::codeloc;
-use crate::system::{address, byte};
+use crate::system::address;
 use crate::system::debugger::{LoggingOptions, PPUDebugger};
 use crate::system::input::InputSubsystem;
 use crate::system::ppu::bus::PPUBus;
 use crate::system::ppu::character_rom::CharacterROM;
 use crate::system::ppu::clock::PPUClock;
+use crate::system::ppu::flags::bus_pointer_latch::PPUBusPointerLatch;
 use crate::system::ppu::flags::control_flags::PPUControlFlags;
 use crate::system::ppu::flags::mask_flags::PPUMaskFlags;
+use crate::system::ppu::flags::scroll_flags::PPUScrollFlags;
 use crate::system::ppu::flags::status_flags::PPUStatusFlags;
 use crate::system::ppu::metrics::WindowMetrics;
 use crate::system::ppu::oam::PPUOAM;
@@ -36,18 +38,14 @@ pub struct PPU
     pub status_flags : PPUStatusFlags,
     pub control_flags : PPUControlFlags,
     pub mask_flags : PPUMaskFlags,
-    pub scroll_x : f32,
-    pub scroll_y : f32,
+    pub scroll : PPUScrollFlags,
     pub bus : PPUBus,
     pub oam : PPUOAM,
     pub input_subsystem : InputSubsystem,
     pub cpu_channels : PPUToCPUChannels,
     pub window_metrics : WindowMetrics,
     pub clock : PPUClock,
-    is_second_scroll_write : bool,
-    first_bus_pointer_write : byte,
-    is_second_bus_pointer_write : bool,
-    bus_pointer : address,
+    bus_pointer : PPUBusPointerLatch,
     oam_pointer : address,
 }
 
@@ -71,18 +69,14 @@ impl PPU
             status_flags: PPUStatusFlags::new(),
             control_flags: PPUControlFlags::new(),
             mask_flags: PPUMaskFlags::new(),
-            scroll_x: 0f32,
-            scroll_y: 0f32,
+            scroll: PPUScrollFlags::new(&character_rom_hash),
             bus: PPUBus::new(character_rom),
             oam: PPUOAM::new(),
             input_subsystem: InputSubsystem::new(),
             cpu_channels: channels,
             window_metrics: WindowMetrics::new(),
-            clock: PPUClock::new(character_rom_hash),
-            is_second_scroll_write: false,
-            first_bus_pointer_write: 0,
-            is_second_bus_pointer_write: false,
-            bus_pointer: 0,
+            clock: PPUClock::new(&character_rom_hash),
+            bus_pointer: PPUBusPointerLatch::new(),
             oam_pointer: 0,
         };
     }
@@ -90,14 +84,17 @@ impl PPU
     pub fn run(self : &mut PPU, mut env : PPURunEnvironment) -> Result<()>
     {
         if env.should_disable_video { return Ok(()) }
-        let mut ppu = self;
+        let ppu = self;
 
         let sdl = sdl2::init().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
         let video_subsystem = sdl.video().map_err(|msg|anyhow!(msg)).context(codeloc!())?;
-        let mut window = video_subsystem.window(env.window_title.as_str(), ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
+
+        let window = video_subsystem.window(env.window_title.as_str(),
+            ppu.window_metrics.get_window_width(), ppu.window_metrics.get_window_height())
             .position_centered().resizable().opengl().build().context(codeloc!())?;
+
         let (opengl_driver_index, _) = sdl2::render::drivers().find_position(|d| d.name=="opengl").unwrap();
-        let mut canvas = window.into_canvas().index(opengl_driver_index as u32).build().context(codeloc!())?;
+        let mut canvas = window.into_canvas().index(opengl_driver_index as u32).accelerated().build().context(codeloc!())?;
 
         let texture_creator = canvas.texture_creator();
         let mut pattern_tables = PatternTables::new(&texture_creator).context(codeloc!())?;
@@ -123,17 +120,13 @@ impl PPU
                     pattern_tables.right.refresh_textures(&ppu.bus).context(codeloc!())?;
                 }
 
-                let mut pipeline = PPURenderingPipeline
+                if let Some(mut pipeline) = PPURenderingPipeline::start(ppu, &env, &pattern_tables, &mut canvas)
                 {
-                    ppu: &mut ppu, env: &env, canvas: &mut canvas,
-                    pattern_tables: &pattern_tables,
-                };
-
-                pipeline.start();
-                pipeline.render_background_sprites_from_oam();
-                pipeline.render_background_from_nametables();
-                pipeline.render_foreground_sprites_from_oam();
-                pipeline.end();
+                    pipeline.render_background_sprites_from_oam();
+                    pipeline.render_background_from_nametables();
+                    pipeline.render_foreground_sprites_from_oam();
+                    pipeline.end();
+                }
 
                 ppu.status_flags.has_vblank_started = true;
                 if ppu.control_flags.is_nmi_enabled
