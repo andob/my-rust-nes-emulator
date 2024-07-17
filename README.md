@@ -8,7 +8,7 @@ This is a NES (Nintendo Entertainment System) emulator I wrote in Rust. The proj
 
 ✅ Complete 6502 CPU implementation, including unofficial opcodes
 
-✅ The CPU implementation pass both kevtris and blargg NES test ROMS
+✅ The CPU implementation pass both kevtris and blargg NES test ROMs
 
 ✅ Mimimally functional PPU (Picture Processing Unit) implementation
 
