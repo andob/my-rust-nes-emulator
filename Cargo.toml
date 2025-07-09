@@ -14,20 +14,20 @@ opt-level = 0
 anyhow = "1.0.79"
 
 # random number generator
-rand = "0.8.5"
+rand = "0.9.1"
 
 # hashmap! literal macro
 maplit2 = "1.0.5"
 
 # iter extensions
-itertools = "0.13.0"
+itertools = "0.14.0"
 
 # String.substring()
 substring = "1.4.5"
 
 # Enum utils
-strum = "0.26.1"
-strum_macros = "0.26.1"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 
 # Faster channels
 flume = "0.11.0"
@@ -36,19 +36,13 @@ flume = "0.11.0"
 sdl2 = "0.37.0"
 
 # CPAL Cross Platform Audio Library
-cpal = "0.15.2"
-
-# Linux API bindings
-nix = "0.29.0"
+cpal = "0.16.0"
 
 # Joystick Linux API wrapper
 joydev = "0.3.1"
 
-# Date/Time library
-chrono = "0.4.34"
-
 # ZIP compression library
-zip = "2.1.3"
+zip = "4.2.0"
 
 # MD5 hash
-md5 = "0.7.0"
+md5 = "0.8.0"
